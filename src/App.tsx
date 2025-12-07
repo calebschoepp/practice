@@ -1,36 +1,27 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import "./index.css";
-
-import logo from "./logo.svg";
-import reactLogo from "./react.svg";
+import { Card } from "@/components/ui/card";
 
 export function App() {
   return (
-    <div className="container mx-auto p-8 text-center relative z-10">
-      <div className="flex justify-center items-center gap-8 mb-8">
-        <img
-          src={logo}
-          alt="Bun Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#646cffaa] scale-120"
-        />
-        <img
-          src={reactLogo}
-          alt="React Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#61dafbaa] [animation:spin_20s_linear_infinite]"
-        />
+    <div className="container mx-auto p-8">
+      <h1 className="text-4xl font-bold text-center mb-4">Practice Better</h1>
+      <p className="text-center text-muted-foreground mb-8">What are we practicing today?</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+        <Card className="cursor-pointer hover:bg-accent transition-colors aspect-square flex flex-col items-center justify-center p-6">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-6xl">🎹</div>
+          </div>
+          <div className="text-2xl font-semibold text-center">Piano</div>
+        </Card>
+
+        <Card className="cursor-pointer hover:bg-accent transition-colors aspect-square flex flex-col items-center justify-center p-6">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-6xl">🎸</div>
+          </div>
+          <div className="text-2xl font-semibold text-center">Guitar</div>
+        </Card>
       </div>
-      <Card>
-        <CardHeader className="gap-4">
-          <CardTitle className="text-3xl font-bold">Bun + React</CardTitle>
-          <CardDescription>
-            Edit <code className="rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono">src/App.tsx</code> and save to
-            test HMR
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Your app content here */}
-        </CardContent>
-      </Card>
     </div>
   );
 }
