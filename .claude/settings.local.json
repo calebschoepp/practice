@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(bun test:*)",
-      "Bash(bun install:*)"
+      "Bash(bun install:*)",
+      "Bash(bun add:*)",
+      "Bash(bun run lint:tsc:*)",
+      "Bash(bun run lint:eslint:*)",
+      "Bash(bun run format:check:*)",
+      "Bash(bun run:*)",
+      "Bash(git restore:*)",
+      "Bash(bunx:*)",
+      "Bash(bun remove:*)"
     ],
     "deny": [],
     "ask": []
