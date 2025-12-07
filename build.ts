@@ -137,6 +137,14 @@ const result = await Bun.build({
 
 const end = performance.now();
 
+// Copy CNAME file to dist for custom domain
+const cnameSource = path.join(process.cwd(), "CNAME");
+const cnameDest = path.join(outdir, "CNAME");
+if (existsSync(cnameSource)) {
+  await Bun.write(cnameDest, Bun.file(cnameSource));
+  console.log("📝 Copied CNAME file for custom domain\n");
+}
+
 const outputTable = result.outputs.map(output => ({
   File: path.relative(process.cwd(), output.path),
   Type: output.kind,
