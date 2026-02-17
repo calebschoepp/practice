@@ -1,0 +1,1 @@
+- What do I want to do about octaves? Treat as variations or core to exercise?

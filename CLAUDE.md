@@ -7,6 +7,25 @@ Default to using Bun instead of Node.js.
 - Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
 - Bun automatically loads .env, so don't use dotenv.
 
+## Core tenets
+
+- This should be a free project that I can statically host e.g. prefer local storage over a backend with a database.
+- Make the features well tested but don't be too verbose in the testing. Prefer e2e tests with Playwright for UI and unit tests for core business logic.
+- Design should be mobile first.
+- Use shadcn for components and Tailwind for styling.
+
+## Tech stack
+
+- Tailwind CSS
+- IndexedDB
+- Typescript
+- ShadCN
+- React
+- React Router
+- Zustand
+
+When necessary you may add more things to the tech stack.
+
 ## APIs
 
 - `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
@@ -103,8 +122,3 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.md`.
-
-## Other notes
-
-- Make sure UI changes work for both desktop and mobile users.
-- Use shadcn for components.

@@ -22,7 +22,7 @@ test("clicking instrument card navigates to practice page", () => {
 
   // Verify we navigated to the practice page
   expect(screen.getByText("Practice piano")).toBeTruthy();
-  expect(screen.getByText("TODO: Add practice content here")).toBeTruthy();
+  expect(screen.getByText("No practice units found. Add some in the edit page!")).toBeTruthy();
 });
 
 test("clicking gear icon navigates to edit page", () => {
@@ -47,5 +47,5 @@ test("clicking gear icon navigates to edit page", () => {
 
   // Verify we navigated to the edit page
   expect(screen.getByText("Edit piano")).toBeTruthy();
-  expect(screen.getByText("TODO: Add edit form here")).toBeTruthy();
+  expect(screen.getByText("Add Practice Unit")).toBeTruthy();
 });

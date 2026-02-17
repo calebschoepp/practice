@@ -10,7 +10,11 @@
       "Bash(bun run:*)",
       "Bash(git restore:*)",
       "Bash(bunx:*)",
-      "Bash(bun remove:*)"
+      "Bash(bun remove:*)",
+      "Bash(git log:*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
