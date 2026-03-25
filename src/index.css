@@ -2,7 +2,7 @@
 
 @layer base {
   :root {
-    @apply font-sans;
+    font-family: "Avenir Next", "Nunito", "Segoe UI", sans-serif;
   }
 
   body {

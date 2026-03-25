@@ -74,6 +74,132 @@
 
 # Open questions
 
-- Do I need primary keys with indexedDB?
-- How can I statically load some of the domain model from JSON files? E.g. exercises and variations. I want to be able to edit these without having to run a script to load them into the database.
-- What would the storage interface look like?
+# Decisions made
+
+## IDs and keys
+
+- Use UUID primary keys for mutable runtime data instead of ints.
+  - `Session.id`: UUID
+  - `Completion.id`: UUID
+- Use human-stable IDs for static catalog data (domain content authored in files).
+  - `Exercise.id`: string like `piano-c-major-scale`
+  - `Variation.id`: string like `staccato`
+- Why this split:
+  - UUIDs are great for client-generated runtime records (no collisions, easy offline creation).
+  - Human-stable IDs make static JSON content easy to edit, diff, and reference over time.
+
+## Static data strategy: JSON directly vs seeding into IndexedDB
+
+### Option A: Consume static JSON directly (no seeding)
+
+- How it works:
+  - Keep `Exercise` and `Variation` in versioned JSON files in the repo.
+  - App reads those files directly at runtime.
+  - IndexedDB stores only runtime/user data (`Session`, `Completion`, preferences, etc.).
+- Pros:
+  - Simplest mental model and implementation.
+  - No migration/version bookkeeping for static content.
+  - Editing content is immediate: update JSON and deploy.
+  - No duplicate copy of static data in DB.
+- Cons:
+  - Limited/no local mutation of static content without adding another write path.
+  - Joining historical runtime data with changed static content can be trickier if IDs or semantics change.
+
+### Option B: Seed static JSON into IndexedDB
+
+- How it works:
+  - JSON remains the source of truth in code.
+  - On app startup, upsert JSON into IndexedDB using a seed version.
+  - App then reads static content from IndexedDB.
+- Pros:
+  - Single query surface for runtime and static data.
+  - Easier to support future user customization/overrides/offline edits.
+  - Can snapshot static content state at time of completion if needed.
+- Cons:
+  - More complexity (seed lifecycle + versioning + migrations).
+  - Risk of stale seeded content if versioning is mishandled.
+  - Duplicates source data at runtime.
+
+### Recommendation right now
+
+- We will use Option B (seed static JSON into IndexedDB).
+- JSON files remain the authoring source of truth, and app startup performs versioned upsert seeding.
+- Keep storage adapter boundaries clean so this can still evolve to a remote API-backed implementation later.
+
+### Decision for this project
+
+- Adopt seeded static catalog data in IndexedDB.
+- Add a `seedVersion` strategy to prevent stale catalog content.
+- Read `Exercise` and `Variation` via storage layer after seeding.
+
+# Storage adapter shape (draft)
+
+Use a pluggable `StorageAdapter` with use-case-oriented methods so UI/business logic is backend-agnostic.
+
+```ts
+export type Instrument = "piano" | "guitar";
+export type PracticeLength = "short" | "long" | "unlimited";
+export type Difficulty = 0 | 1 | 2 | 3 | 4;
+
+export interface Exercise {
+  id: string; // human-stable id
+  name: string;
+  description?: string;
+  fingering?: string;
+  targetTempo?: number;
+  timeSignature?: string;
+  type: "triad" | "scale" | string;
+  instrument: Instrument;
+}
+
+export interface Variation {
+  id: string; // human-stable id
+  forType: Exercise["type"];
+  name: string;
+  description?: string;
+  instructions?: string;
+}
+
+export interface Session {
+  id: string; // UUID
+  start: string; // ISO timestamp
+  end?: string;
+  notes?: string;
+  instrument: Instrument;
+  length: PracticeLength;
+}
+
+export interface Completion {
+  id: string; // UUID
+  sessionId: string; // UUID
+  exerciseId: string; // Exercise.id
+  variationId?: string; // Variation.id
+  start: string; // ISO timestamp
+  end?: string;
+  actualTempo?: number;
+  difficulty: Difficulty;
+}
+
+export interface StorageAdapter {
+  // static catalog
+  seedIfNeeded(seedVersion: number): Promise<void>;
+  listExercises(instrument?: Instrument): Promise<Exercise[]>;
+  listVariations(forType?: string): Promise<Variation[]>;
+
+  // sessions
+  createSession(input: Omit<Session, "id">): Promise<Session>;
+  endSession(sessionId: string, end: string): Promise<void>;
+  getSession(sessionId: string): Promise<Session | null>;
+  listSessions(): Promise<Session[]>;
+
+  // completions
+  createCompletion(input: Omit<Completion, "id">): Promise<Completion>;
+  listCompletionsBySession(sessionId: string): Promise<Completion[]>;
+  listCompletionsByExercise(exerciseId: string): Promise<Completion[]>;
+}
+```
+
+Notes:
+
+- For this project, static catalog reads are folded into `StorageAdapter`.
+- Startup flow should run `seedIfNeeded(CURRENT_SEED_VERSION)` before first catalog query.
