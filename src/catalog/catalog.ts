@@ -1,6 +1,8 @@
 import type { Exercise, NoteName, PianoKeyFingering, Variation } from "@/domain/types";
 
-export const CURRENT_SEED_VERSION = 5;
+export const CURRENT_SEED_VERSION = 8;
+
+const NOTE_ORDER: NoteName[] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 // Helper to build 2-octave piano scale fingering from note sequence and finger patterns
 function pianoScale(
@@ -11,31 +13,37 @@ function pianoScale(
   lhFingers: number[],
   tempo = 80
 ): Exercise {
-  // notes is the ascending scale (e.g. 8 notes for a major scale including top note)
-  // We play 2 octaves: notes across octave 1, then again in octave 2, ending on the root in octave 3
-  // rhFingers/lhFingers correspond to the 15-note 2-octave ascending pattern
-  const rhKeys: PianoKeyFingering[] = [];
-  const lhKeys: PianoKeyFingering[] = [];
+  // notes is the ascending scale (e.g. 8 notes including the top note which equals the root)
+  // rhFingers/lhFingers are 15-note 2-octave ascending patterns
+  //
+  // We assign chromatic-order octaves: start at octave 1 on the root note,
+  // and bump the octave each time a note's chromatic index is <= the previous note's.
+  const scaleLen = notes.length - 1; // 7 for major/minor
 
-  // Build unique key map (note+octave -> finger) from the full ascending sequence
-  const rhMap = new Map<string, number>();
-  const lhMap = new Map<string, number>();
+  function buildKeys(fingers: number[]): PianoKeyFingering[] {
+    const map = new Map<string, number>();
+    let currentOctave = 1;
+    let prevChromaticIdx = NOTE_ORDER.indexOf(notes[0]!);
 
-  for (let i = 0; i < rhFingers.length; i++) {
-    const noteIdx = i % (notes.length - 1);
-    const octave = i < notes.length - 1 ? 1 : i < (notes.length - 1) * 2 ? 2 : 3;
-    const key = `${notes[noteIdx]}-${octave}`;
-    if (!rhMap.has(key)) rhMap.set(key, rhFingers[i]!);
-    if (!lhMap.has(key)) lhMap.set(key, lhFingers[i]!);
-  }
+    for (let i = 0; i < fingers.length; i++) {
+      const note = notes[i % scaleLen]!;
+      const chromaticIdx = NOTE_ORDER.indexOf(note);
 
-  for (const [key, finger] of rhMap) {
-    const [note, oct] = key.split("-");
-    rhKeys.push({ note: note as NoteName, octave: Number(oct) as 1 | 2 | 3, finger });
-  }
-  for (const [key, finger] of lhMap) {
-    const [note, oct] = key.split("-");
-    lhKeys.push({ note: note as NoteName, octave: Number(oct) as 1 | 2 | 3, finger });
+      if (i > 0 && chromaticIdx <= prevChromaticIdx) {
+        currentOctave++;
+      }
+      prevChromaticIdx = chromaticIdx;
+
+      const key = `${note}-${currentOctave}`;
+      if (!map.has(key)) map.set(key, fingers[i]!);
+    }
+
+    const keys: PianoKeyFingering[] = [];
+    for (const [key, finger] of map) {
+      const [note, oct] = key.split("-");
+      keys.push({ note: note as NoteName, octave: Number(oct) as 1 | 2 | 3, finger });
+    }
+    return keys;
   }
 
   return {
@@ -46,8 +54,8 @@ function pianoScale(
     fingering: {
       type: "piano",
       hands: [
-        { hand: "RH", keys: rhKeys },
-        { hand: "LH", keys: lhKeys },
+        { hand: "RH", keys: buildKeys(rhFingers) },
+        { hand: "LH", keys: buildKeys(lhFingers) },
       ],
     },
   };
@@ -191,19 +199,19 @@ const RH_GsHarm = [2, 3, 1, 2, 3, 1, 2, 2, 3, 1, 2, 3, 1, 2, 3];
 const LH_GsHarm = [3, 2, 1, 4, 3, 2, 1, 3, 2, 1, 4, 3, 2, 1, 3];
 
 export const EXERCISES: Exercise[] = [
-  // === MAJOR SCALES ===
+  // === MAJOR SCALES (circle of fifths, alternating) ===
   pianoScale("piano-c-major-scale", "C Major Scale", C_MAJ, RH_C, LH_C, 88),
-  pianoScale("piano-db-major-scale", "D♭ Major Scale", Db_MAJ, RH_Db, LH_Db, 72),
+  pianoScale("piano-g-major-scale", "G Major Scale", G_MAJ, RH_G, LH_G, 84),
+  pianoScale("piano-f-major-scale", "F Major Scale", F_MAJ, RH_F, LH_F, 84),
   pianoScale("piano-d-major-scale", "D Major Scale", D_MAJ, RH_D, LH_D, 80),
+  pianoScale("piano-bb-major-scale", "B♭ Major Scale", Bb_MAJ, RH_Bb, LH_Bb, 76),
+  pianoScale("piano-a-major-scale", "A Major Scale", A_MAJ, RH_A, LH_A, 80),
   pianoScale("piano-eb-major-scale", "E♭ Major Scale", Eb_MAJ, RH_Eb, LH_Eb, 76),
   pianoScale("piano-e-major-scale", "E Major Scale", E_MAJ, RH_E, LH_E, 80),
-  pianoScale("piano-f-major-scale", "F Major Scale", F_MAJ, RH_F, LH_F, 84),
-  pianoScale("piano-gb-major-scale", "G♭ Major Scale", Gb_MAJ, RH_Gb, LH_Gb, 72),
-  pianoScale("piano-g-major-scale", "G Major Scale", G_MAJ, RH_G, LH_G, 84),
   pianoScale("piano-ab-major-scale", "A♭ Major Scale", Ab_MAJ, RH_Ab, LH_Ab, 76),
-  pianoScale("piano-a-major-scale", "A Major Scale", A_MAJ, RH_A, LH_A, 80),
-  pianoScale("piano-bb-major-scale", "B♭ Major Scale", Bb_MAJ, RH_Bb, LH_Bb, 76),
   pianoScale("piano-b-major-scale", "B Major Scale", B_MAJ, RH_B, LH_B, 76),
+  pianoScale("piano-db-major-scale", "D♭ Major Scale", Db_MAJ, RH_Db, LH_Db, 72),
+  pianoScale("piano-gb-major-scale", "F♯/G♭ Major Scale", Gb_MAJ, RH_Gb, LH_Gb, 72),
 
   // === ARPEGGIOS ===
   {
@@ -242,21 +250,28 @@ export const EXERCISES: Exercise[] = [
     },
   },
 
-  // === NATURAL MINOR SCALES ===
+  // === NATURAL MINOR SCALES (circle of fifths, alternating) ===
   pianoScale("piano-a-natural-minor-scale", "A Natural Minor Scale", A_MIN, RH_Am, LH_Am, 84),
-  pianoScale("piano-bb-natural-minor-scale", "B♭ Natural Minor Scale", Bb_MIN, RH_Bbm, LH_Bbm, 72),
+  pianoScale("piano-e-natural-minor-scale", "E Natural Minor Scale", E_MIN, RH_Em, LH_Em, 80),
+  pianoScale("piano-d-natural-minor-scale", "D Natural Minor Scale", D_MIN, RH_Dm, LH_Dm, 84),
   pianoScale("piano-b-natural-minor-scale", "B Natural Minor Scale", B_MIN, RH_Bm, LH_Bm, 76),
+  pianoScale("piano-g-natural-minor-scale", "G Natural Minor Scale", G_MIN, RH_Gm, LH_Gm, 80),
+  pianoScale("piano-fs-natural-minor-scale", "F♯ Natural Minor Scale", Fs_MIN, RH_Fsm, LH_Fsm, 72),
   pianoScale("piano-c-natural-minor-scale", "C Natural Minor Scale", C_MIN, RH_Cm, LH_Cm, 80),
   pianoScale("piano-cs-natural-minor-scale", "C♯ Natural Minor Scale", Cs_MIN, RH_Csm, LH_Csm, 72),
-  pianoScale("piano-d-natural-minor-scale", "D Natural Minor Scale", D_MIN, RH_Dm, LH_Dm, 84),
-  pianoScale("piano-eb-natural-minor-scale", "E♭ Natural Minor Scale", Eb_MIN, RH_Ebm, LH_Ebm, 72),
-  pianoScale("piano-e-natural-minor-scale", "E Natural Minor Scale", E_MIN, RH_Em, LH_Em, 80),
   pianoScale("piano-f-natural-minor-scale", "F Natural Minor Scale", F_MIN, RH_Fm, LH_Fm, 76),
-  pianoScale("piano-fs-natural-minor-scale", "F♯ Natural Minor Scale", Fs_MIN, RH_Fsm, LH_Fsm, 72),
-  pianoScale("piano-g-natural-minor-scale", "G Natural Minor Scale", G_MIN, RH_Gm, LH_Gm, 80),
   pianoScale("piano-gs-natural-minor-scale", "G♯ Natural Minor Scale", Gs_MIN, RH_Gsm, LH_Gsm, 72),
+  pianoScale("piano-bb-natural-minor-scale", "B♭ Natural Minor Scale", Bb_MIN, RH_Bbm, LH_Bbm, 72),
+  pianoScale(
+    "piano-eb-natural-minor-scale",
+    "D♯/E♭ Natural Minor Scale",
+    Eb_MIN,
+    RH_Ebm,
+    LH_Ebm,
+    72
+  ),
 
-  // === HARMONIC MINOR SCALES ===
+  // === HARMONIC MINOR SCALES (circle of fifths, alternating) ===
   pianoScale(
     "piano-a-harmonic-minor-scale",
     "A Harmonic Minor Scale",
@@ -266,12 +281,20 @@ export const EXERCISES: Exercise[] = [
     80
   ),
   pianoScale(
-    "piano-bb-harmonic-minor-scale",
-    "B♭ Harmonic Minor Scale",
-    Bb_HARM,
-    RH_BbHarm,
-    LH_BbHarm,
-    68
+    "piano-e-harmonic-minor-scale",
+    "E Harmonic Minor Scale",
+    E_HARM,
+    RH_EHarm,
+    LH_EHarm,
+    76
+  ),
+  pianoScale(
+    "piano-d-harmonic-minor-scale",
+    "D Harmonic Minor Scale",
+    D_HARM,
+    RH_DHarm,
+    LH_DHarm,
+    80
   ),
   pianoScale(
     "piano-b-harmonic-minor-scale",
@@ -280,6 +303,22 @@ export const EXERCISES: Exercise[] = [
     RH_BHarm,
     LH_BHarm,
     72
+  ),
+  pianoScale(
+    "piano-g-harmonic-minor-scale",
+    "G Harmonic Minor Scale",
+    G_HARM,
+    RH_GHarm,
+    LH_GHarm,
+    76
+  ),
+  pianoScale(
+    "piano-fs-harmonic-minor-scale",
+    "F♯ Harmonic Minor Scale",
+    Fs_HARM,
+    RH_FsHarm,
+    LH_FsHarm,
+    68
   ),
   pianoScale(
     "piano-c-harmonic-minor-scale",
@@ -298,52 +337,12 @@ export const EXERCISES: Exercise[] = [
     68
   ),
   pianoScale(
-    "piano-d-harmonic-minor-scale",
-    "D Harmonic Minor Scale",
-    D_HARM,
-    RH_DHarm,
-    LH_DHarm,
-    80
-  ),
-  pianoScale(
-    "piano-eb-harmonic-minor-scale",
-    "E♭ Harmonic Minor Scale",
-    Eb_HARM,
-    RH_EbHarm,
-    LH_EbHarm,
-    68
-  ),
-  pianoScale(
-    "piano-e-harmonic-minor-scale",
-    "E Harmonic Minor Scale",
-    E_HARM,
-    RH_EHarm,
-    LH_EHarm,
-    76
-  ),
-  pianoScale(
     "piano-f-harmonic-minor-scale",
     "F Harmonic Minor Scale",
     F_HARM,
     RH_FHarm,
     LH_FHarm,
     72
-  ),
-  pianoScale(
-    "piano-fs-harmonic-minor-scale",
-    "F♯ Harmonic Minor Scale",
-    Fs_HARM,
-    RH_FsHarm,
-    LH_FsHarm,
-    68
-  ),
-  pianoScale(
-    "piano-g-harmonic-minor-scale",
-    "G Harmonic Minor Scale",
-    G_HARM,
-    RH_GHarm,
-    LH_GHarm,
-    76
   ),
   pianoScale(
     "piano-gs-harmonic-minor-scale",
@@ -353,18 +352,37 @@ export const EXERCISES: Exercise[] = [
     LH_GsHarm,
     68
   ),
-
-  // === MELODIC MINOR SCALES ===
-  pianoScale("piano-a-melodic-minor-scale", "A Melodic Minor Scale", A_MELOD, RH_Am, LH_Am, 80),
   pianoScale(
-    "piano-bb-melodic-minor-scale",
-    "B♭ Melodic Minor Scale",
-    Bb_MELOD,
-    RH_Bbm,
-    LH_Bbm,
+    "piano-bb-harmonic-minor-scale",
+    "B♭ Harmonic Minor Scale",
+    Bb_HARM,
+    RH_BbHarm,
+    LH_BbHarm,
     68
   ),
+  pianoScale(
+    "piano-eb-harmonic-minor-scale",
+    "D♯/E♭ Harmonic Minor Scale",
+    Eb_HARM,
+    RH_EbHarm,
+    LH_EbHarm,
+    68
+  ),
+
+  // === MELODIC MINOR SCALES (circle of fifths, alternating) ===
+  pianoScale("piano-a-melodic-minor-scale", "A Melodic Minor Scale", A_MELOD, RH_Am, LH_Am, 80),
+  pianoScale("piano-e-melodic-minor-scale", "E Melodic Minor Scale", E_MELOD, RH_Em, LH_Em, 76),
+  pianoScale("piano-d-melodic-minor-scale", "D Melodic Minor Scale", D_MELOD, RH_Dm, LH_Dm, 80),
   pianoScale("piano-b-melodic-minor-scale", "B Melodic Minor Scale", B_MELOD, RH_Bm, LH_Bm, 72),
+  pianoScale("piano-g-melodic-minor-scale", "G Melodic Minor Scale", G_MELOD, RH_Gm, LH_Gm, 76),
+  pianoScale(
+    "piano-fs-melodic-minor-scale",
+    "F♯ Melodic Minor Scale",
+    Fs_MELOD,
+    RH_Fsm,
+    LH_Fsm,
+    68
+  ),
   pianoScale("piano-c-melodic-minor-scale", "C Melodic Minor Scale", C_MELOD, RH_Cm, LH_Cm, 76),
   pianoScale(
     "piano-cs-melodic-minor-scale",
@@ -374,32 +392,29 @@ export const EXERCISES: Exercise[] = [
     LH_Csm,
     68
   ),
-  pianoScale("piano-d-melodic-minor-scale", "D Melodic Minor Scale", D_MELOD, RH_Dm, LH_Dm, 80),
-  pianoScale(
-    "piano-eb-melodic-minor-scale",
-    "E♭ Melodic Minor Scale",
-    Eb_MELOD,
-    RH_Ebm,
-    LH_Ebm,
-    68
-  ),
-  pianoScale("piano-e-melodic-minor-scale", "E Melodic Minor Scale", E_MELOD, RH_Em, LH_Em, 76),
   pianoScale("piano-f-melodic-minor-scale", "F Melodic Minor Scale", F_MELOD, RH_Fm, LH_Fm, 72),
-  pianoScale(
-    "piano-fs-melodic-minor-scale",
-    "F♯ Melodic Minor Scale",
-    Fs_MELOD,
-    RH_Fsm,
-    LH_Fsm,
-    68
-  ),
-  pianoScale("piano-g-melodic-minor-scale", "G Melodic Minor Scale", G_MELOD, RH_Gm, LH_Gm, 76),
   pianoScale(
     "piano-gs-melodic-minor-scale",
     "G♯ Melodic Minor Scale",
     Gs_MELOD,
     RH_Gsm,
     LH_Gsm,
+    68
+  ),
+  pianoScale(
+    "piano-bb-melodic-minor-scale",
+    "B♭ Melodic Minor Scale",
+    Bb_MELOD,
+    RH_Bbm,
+    LH_Bbm,
+    68
+  ),
+  pianoScale(
+    "piano-eb-melodic-minor-scale",
+    "D♯/E♭ Melodic Minor Scale",
+    Eb_MELOD,
+    RH_Ebm,
+    LH_Ebm,
     68
   ),
 

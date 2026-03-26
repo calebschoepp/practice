@@ -26,7 +26,7 @@ export function DifficultyOverlay({ open, onSelect }: DifficultyOverlayProps) {
         {LABELS.map((item) => (
           <Button
             key={item.value}
-            variant={item.value >= 3 ? "default" : "outline"}
+            variant="outline"
             className="h-12"
             onClick={() => onSelect(item.value)}
             data-testid={`difficulty-${item.value}`}

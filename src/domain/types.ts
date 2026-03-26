@@ -6,7 +6,7 @@ export type NoteName = "C" | "C#" | "D" | "D#" | "E" | "F" | "F#" | "G" | "G#" |
 
 export interface PianoKeyFingering {
   note: NoteName;
-  octave: 1 | 2 | 3;
+  octave: number;
   finger: number;
 }
 
