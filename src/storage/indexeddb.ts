@@ -112,6 +112,29 @@ export class IndexedDbStorageAdapter implements StorageAdapter {
     return this.listAllFromStore<Variation>(STORES.variations);
   }
 
+  async getDisabledExerciseIds(): Promise<Set<string>> {
+    const db = await this.getDb();
+    const tx = db.transaction(STORES.meta, "readonly");
+    const row = (await requestToPromise(tx.objectStore(STORES.meta).get("disabledExerciseIds"))) as
+      | { key: string; value: string[] }
+      | undefined;
+    await transactionDone(tx);
+    return new Set(row?.value ?? []);
+  }
+
+  async setExerciseEnabled(exerciseId: string, enabled: boolean): Promise<void> {
+    const db = await this.getDb();
+    const disabled = await this.getDisabledExerciseIds();
+    if (enabled) {
+      disabled.delete(exerciseId);
+    } else {
+      disabled.add(exerciseId);
+    }
+    const tx = db.transaction(STORES.meta, "readwrite");
+    tx.objectStore(STORES.meta).put({ key: "disabledExerciseIds", value: [...disabled] });
+    await transactionDone(tx);
+  }
+
   async createSession(input: SessionInput): Promise<Session> {
     const db = await this.getDb();
     const session: Session = {

@@ -7,8 +7,20 @@ import {
 import type { Exercise, Variation } from "@/domain/types";
 
 const exercises: Exercise[] = [
-  { id: "a", instrument: "piano", name: "A", defaultTempo: 80, fingering: ["1"] },
-  { id: "b", instrument: "piano", name: "B", defaultTempo: 90, fingering: ["2"] },
+  {
+    id: "a",
+    instrument: "piano",
+    name: "A",
+    defaultTempo: 80,
+    fingering: { type: "piano", hands: [{ hand: "RH", keys: [] }] },
+  },
+  {
+    id: "b",
+    instrument: "piano",
+    name: "B",
+    defaultTempo: 90,
+    fingering: { type: "piano", hands: [{ hand: "RH", keys: [] }] },
+  },
 ];
 
 const variations: Variation[] = [

@@ -2,12 +2,44 @@ export type Instrument = "piano" | "guitar";
 
 export type PracticeLength = "short" | "long" | "unlimited";
 
+export type NoteName = "C" | "C#" | "D" | "D#" | "E" | "F" | "F#" | "G" | "G#" | "A" | "A#" | "B";
+
+export interface PianoKeyFingering {
+  note: NoteName;
+  octave: 1 | 2 | 3;
+  finger: number;
+}
+
+export interface PianoHand {
+  hand: "RH" | "LH";
+  keys: PianoKeyFingering[];
+}
+
+export interface PianoFingering {
+  type: "piano";
+  hands: PianoHand[];
+}
+
+export interface GuitarPosition {
+  string: number;
+  fret: number;
+  finger?: number;
+}
+
+export interface GuitarFingering {
+  type: "guitar";
+  positions: GuitarPosition[];
+  startFret?: number;
+}
+
+export type Fingering = PianoFingering | GuitarFingering;
+
 export interface Exercise {
   id: string;
   instrument: Instrument;
   name: string;
   defaultTempo: number;
-  fingering: string[];
+  fingering: Fingering;
 }
 
 export interface Variation {

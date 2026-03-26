@@ -66,12 +66,14 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     set({ isBusy: true });
     await ensureStorageBootstrapped();
 
-    const [exercises, variations] = await Promise.all([
+    const [exercises, variations, disabledIds] = await Promise.all([
       storageAdapter.listExercises(instrument),
       storageAdapter.listVariations(),
+      storageAdapter.getDisabledExerciseIds(),
     ]);
 
-    const queue = createPracticeQueue(exercises, variations, length);
+    const enabledExercises = exercises.filter((e) => !disabledIds.has(e.id));
+    const queue = createPracticeQueue(enabledExercises, variations, length);
     if (queue.length === 0) {
       set({ isBusy: false });
       return;
@@ -132,10 +134,14 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     let nextIndex = state.queueIndex + 1;
 
     if (state.targetCount === null) {
-      const exercises = await storageAdapter.listExercises(state.instrument);
+      const [exercises, disabledIds] = await Promise.all([
+        storageAdapter.listExercises(state.instrument),
+        storageAdapter.getDisabledExerciseIds(),
+      ]);
       const variations = await storageAdapter.listVariations();
+      const enabledExercises = exercises.filter((e) => !disabledIds.has(e.id));
       const previousExerciseId = state.queue[state.queueIndex]?.exercise.id;
-      const nextItem = createNextQueueItem(exercises, variations, previousExerciseId);
+      const nextItem = createNextQueueItem(enabledExercises, variations, previousExerciseId);
       nextQueue = [...state.queue, nextItem];
       nextIndex = state.queueIndex + 1;
     }

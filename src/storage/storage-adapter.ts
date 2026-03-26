@@ -38,6 +38,9 @@ export interface StorageAdapter {
   listExercises(instrument?: Instrument): Promise<Exercise[]>;
   listVariations(): Promise<Variation[]>;
 
+  getDisabledExerciseIds(): Promise<Set<string>>;
+  setExerciseEnabled(exerciseId: string, enabled: boolean): Promise<void>;
+
   createSession(input: SessionInput): Promise<Session>;
   getSession(id: string): Promise<Session | null>;
   listSessions(): Promise<Session[]>;

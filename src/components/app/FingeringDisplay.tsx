@@ -1,23 +1,26 @@
-import type { Instrument } from "@/domain/types";
+import type { Fingering } from "@/domain/types";
+import { GuitarFretboard } from "./GuitarFretboard";
+import { PianoKeyboard } from "./PianoKeyboard";
 
 interface FingeringDisplayProps {
-  instrument: Instrument;
-  fingering: string[];
+  fingering: Fingering;
 }
 
-export function FingeringDisplay({ instrument, fingering }: FingeringDisplayProps) {
+export function FingeringDisplay({ fingering }: FingeringDisplayProps) {
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
       <p className="mb-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">
-        {instrument === "piano" ? "Keyboard Fingering" : "Fretboard Pattern"}
+        {fingering.type === "piano" ? "Keyboard Fingering" : "Fretboard Pattern"}
       </p>
-      <div className="space-y-2">
-        {fingering.map((line) => (
-          <p key={line} className="rounded-md bg-muted/70 px-3 py-2 font-mono text-sm">
-            {line}
-          </p>
-        ))}
-      </div>
+      {fingering.type === "piano" ? (
+        <div className="space-y-3">
+          {fingering.hands.map((hand) => (
+            <PianoKeyboard key={hand.hand} hand={hand} />
+          ))}
+        </div>
+      ) : (
+        <GuitarFretboard fingering={fingering} />
+      )}
     </div>
   );
 }

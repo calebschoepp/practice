@@ -22,7 +22,6 @@ export function SessionPage() {
     queueIndex,
     completedCount,
     targetCount,
-    instrument,
     muted,
     tempo,
     adjustTempo,
@@ -96,6 +95,16 @@ export function SessionPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "m" || e.key === "M") {
+        toggleMuted();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [toggleMuted]);
+
   if (!current) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col items-center justify-center px-4">
@@ -119,8 +128,8 @@ export function SessionPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-4 py-6">
-      <header className="mb-6 flex items-center justify-between">
+    <main className="mx-auto flex h-dvh w-full max-w-xl flex-col px-4 py-4 overflow-hidden">
+      <header className="mb-4 flex shrink-0 items-center justify-between">
         <SessionProgressIndicator completedCount={completedCount} targetCount={targetCount} />
         <div className="flex gap-2">
           <Button
@@ -144,13 +153,13 @@ export function SessionPage() {
         </div>
       </header>
 
-      <Card className="mb-4">
-        <CardContent className="space-y-6 pt-6">
+      <Card className="min-h-0 flex-1">
+        <CardContent className="flex h-full flex-col justify-between gap-4 pt-4">
           <ExerciseHeader
             exerciseName={current.exercise.name}
             variationName={current.variation.name}
           />
-          <FingeringDisplay instrument={instrument} fingering={current.exercise.fingering} />
+          <FingeringDisplay fingering={current.exercise.fingering} />
           <TempoControl
             tempo={tempo}
             onDecrease={() => adjustTempo(-2)}
