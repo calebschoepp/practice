@@ -1,6 +1,6 @@
 import type { Exercise, NoteName, PianoKeyFingering, Variation } from "@/domain/types";
 
-export const CURRENT_SEED_VERSION = 8;
+export const CURRENT_SEED_VERSION = 9;
 
 const NOTE_ORDER: NoteName[] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
@@ -42,6 +42,84 @@ function pianoScale(
     for (const [key, finger] of map) {
       const [note, oct] = key.split("-");
       keys.push({ note: note as NoteName, octave: Number(oct) as 1 | 2 | 3, finger });
+    }
+    return keys;
+  }
+
+  return {
+    id,
+    instrument: "piano",
+    name,
+    defaultTempo: tempo,
+    fingering: {
+      type: "piano",
+      hands: [
+        { hand: "RH", keys: buildKeys(rhFingers) },
+        { hand: "LH", keys: buildKeys(lhFingers) },
+      ],
+    },
+  };
+}
+
+// Helper to build 2-octave piano arpeggio fingering (7 notes: R-3-5-R-3-5-R)
+function pianoArpeggio(
+  id: string,
+  name: string,
+  notes: [NoteName, NoteName, NoteName],
+  rhFingers: number[],
+  lhFingers: number[],
+  tempo = 72
+): Exercise {
+  function buildKeys(fingers: number[]): PianoKeyFingering[] {
+    const keys: PianoKeyFingering[] = [];
+    let currentOctave = 1;
+    let prevChromaticIdx = NOTE_ORDER.indexOf(notes[0]);
+
+    for (let i = 0; i < fingers.length; i++) {
+      const note = notes[i % 3]!;
+      const chromaticIdx = NOTE_ORDER.indexOf(note);
+      if (i > 0 && chromaticIdx <= prevChromaticIdx) currentOctave++;
+      prevChromaticIdx = chromaticIdx;
+      keys.push({ note, octave: currentOctave, finger: fingers[i]! });
+    }
+    return keys;
+  }
+
+  return {
+    id,
+    instrument: "piano",
+    name,
+    defaultTempo: tempo,
+    fingering: {
+      type: "piano",
+      hands: [
+        { hand: "RH", keys: buildKeys(rhFingers) },
+        { hand: "LH", keys: buildKeys(lhFingers) },
+      ],
+    },
+  };
+}
+
+// Helper to build root-position piano triad (3 notes)
+function pianoTriad(
+  id: string,
+  name: string,
+  notes: [NoteName, NoteName, NoteName],
+  rhFingers: [number, number, number],
+  lhFingers: [number, number, number],
+  tempo = 72
+): Exercise {
+  function buildKeys(fingers: number[]): PianoKeyFingering[] {
+    const keys: PianoKeyFingering[] = [];
+    let currentOctave = 1;
+    let prevChromaticIdx = NOTE_ORDER.indexOf(notes[0]);
+
+    for (let i = 0; i < 3; i++) {
+      const note = notes[i]!;
+      const chromaticIdx = NOTE_ORDER.indexOf(note);
+      if (i > 0 && chromaticIdx <= prevChromaticIdx) currentOctave++;
+      prevChromaticIdx = chromaticIdx;
+      keys.push({ note, octave: currentOctave, finger: fingers[i]! });
     }
     return keys;
   }
@@ -213,42 +291,245 @@ export const EXERCISES: Exercise[] = [
   pianoScale("piano-db-major-scale", "D♭ Major Scale", Db_MAJ, RH_Db, LH_Db, 72),
   pianoScale("piano-gb-major-scale", "F♯/G♭ Major Scale", Gb_MAJ, RH_Gb, LH_Gb, 72),
 
-  // === ARPEGGIOS ===
-  {
-    id: "piano-arpeggio-c-major",
-    instrument: "piano",
-    name: "C Major Arpeggio",
-    defaultTempo: 76,
-    fingering: {
-      type: "piano",
-      hands: [
-        {
-          hand: "RH",
-          keys: [
-            { note: "C", octave: 1, finger: 1 },
-            { note: "E", octave: 1, finger: 2 },
-            { note: "G", octave: 1, finger: 3 },
-            { note: "C", octave: 2, finger: 1 },
-            { note: "E", octave: 2, finger: 2 },
-            { note: "G", octave: 2, finger: 3 },
-            { note: "C", octave: 3, finger: 5 },
-          ],
-        },
-        {
-          hand: "LH",
-          keys: [
-            { note: "C", octave: 1, finger: 5 },
-            { note: "E", octave: 1, finger: 3 },
-            { note: "G", octave: 1, finger: 2 },
-            { note: "C", octave: 2, finger: 1 },
-            { note: "E", octave: 2, finger: 3 },
-            { note: "G", octave: 2, finger: 2 },
-            { note: "C", octave: 3, finger: 1 },
-          ],
-        },
-      ],
-    },
-  },
+  // === MAJOR ARPEGGIOS (circle of fifths) ===
+  // White-key root: RH 1-2-3-1-2-3-5, LH 5-3-2-1-3-2-1
+  // Black-key root: RH 2-1-2-4-1-2-4, LH 2-1-4-2-1-4-2
+  pianoArpeggio(
+    "piano-c-major-arpeggio",
+    "C Major Arpeggio",
+    ["C", "E", "G"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 3, 2, 1, 3, 2, 1],
+    76
+  ),
+  pianoArpeggio(
+    "piano-g-major-arpeggio",
+    "G Major Arpeggio",
+    ["G", "B", "D"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 3, 2, 1, 3, 2, 1],
+    76
+  ),
+  pianoArpeggio(
+    "piano-f-major-arpeggio",
+    "F Major Arpeggio",
+    ["F", "A", "C"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 4, 2, 1, 4, 2, 1],
+    76
+  ),
+  pianoArpeggio(
+    "piano-d-major-arpeggio",
+    "D Major Arpeggio",
+    ["D", "F#", "A"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 3, 2, 1, 3, 2, 1],
+    72
+  ),
+  pianoArpeggio(
+    "piano-bb-major-arpeggio",
+    "B♭ Major Arpeggio",
+    ["A#", "D", "F"],
+    [2, 1, 2, 4, 1, 2, 4],
+    [3, 2, 1, 3, 2, 1, 3],
+    72
+  ),
+  pianoArpeggio(
+    "piano-a-major-arpeggio",
+    "A Major Arpeggio",
+    ["A", "C#", "E"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 3, 2, 1, 3, 2, 1],
+    72
+  ),
+  pianoArpeggio(
+    "piano-eb-major-arpeggio",
+    "E♭ Major Arpeggio",
+    ["D#", "G", "A#"],
+    [2, 1, 2, 4, 1, 2, 4],
+    [2, 1, 4, 2, 1, 4, 2],
+    72
+  ),
+  pianoArpeggio(
+    "piano-e-major-arpeggio",
+    "E Major Arpeggio",
+    ["E", "G#", "B"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 3, 2, 1, 3, 2, 1],
+    72
+  ),
+  pianoArpeggio(
+    "piano-ab-major-arpeggio",
+    "A♭ Major Arpeggio",
+    ["G#", "C", "D#"],
+    [2, 1, 2, 4, 1, 2, 4],
+    [2, 1, 4, 2, 1, 4, 2],
+    72
+  ),
+  pianoArpeggio(
+    "piano-b-major-arpeggio",
+    "B Major Arpeggio",
+    ["B", "D#", "F#"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 3, 2, 1, 3, 2, 1],
+    68
+  ),
+  pianoArpeggio(
+    "piano-db-major-arpeggio",
+    "D♭ Major Arpeggio",
+    ["C#", "F", "G#"],
+    [2, 1, 2, 4, 1, 2, 4],
+    [2, 1, 4, 2, 1, 4, 2],
+    68
+  ),
+  pianoArpeggio(
+    "piano-gb-major-arpeggio",
+    "F♯/G♭ Major Arpeggio",
+    ["F#", "A#", "C#"],
+    [2, 4, 1, 2, 4, 1, 2],
+    [2, 1, 4, 2, 1, 4, 2],
+    68
+  ),
+
+  // === MINOR ARPEGGIOS (circle of fifths) ===
+  pianoArpeggio(
+    "piano-a-minor-arpeggio",
+    "A Minor Arpeggio",
+    ["A", "C", "E"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 3, 2, 1, 3, 2, 1],
+    76
+  ),
+  pianoArpeggio(
+    "piano-e-minor-arpeggio",
+    "E Minor Arpeggio",
+    ["E", "G", "B"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 3, 2, 1, 3, 2, 1],
+    76
+  ),
+  pianoArpeggio(
+    "piano-d-minor-arpeggio",
+    "D Minor Arpeggio",
+    ["D", "F", "A"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 3, 2, 1, 3, 2, 1],
+    76
+  ),
+  pianoArpeggio(
+    "piano-b-minor-arpeggio",
+    "B Minor Arpeggio",
+    ["B", "D", "F#"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 3, 2, 1, 3, 2, 1],
+    72
+  ),
+  pianoArpeggio(
+    "piano-g-minor-arpeggio",
+    "G Minor Arpeggio",
+    ["G", "A#", "D"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 3, 2, 1, 3, 2, 1],
+    72
+  ),
+  pianoArpeggio(
+    "piano-fs-minor-arpeggio",
+    "F♯ Minor Arpeggio",
+    ["F#", "A", "C#"],
+    [2, 1, 2, 4, 1, 2, 4],
+    [2, 1, 4, 2, 1, 4, 2],
+    68
+  ),
+  pianoArpeggio(
+    "piano-c-minor-arpeggio",
+    "C Minor Arpeggio",
+    ["C", "D#", "G"],
+    [1, 2, 3, 1, 2, 3, 5],
+    [5, 3, 2, 1, 3, 2, 1],
+    72
+  ),
+  pianoArpeggio(
+    "piano-cs-minor-arpeggio",
+    "C♯ Minor Arpeggio",
+    ["C#", "E", "G#"],
+    [2, 1, 2, 4, 1, 2, 4],
+    [2, 1, 4, 2, 1, 4, 2],
+    68
+  ),
+  pianoArpeggio(
+    "piano-f-minor-arpeggio",
+    "F Minor Arpeggio",
+    ["F", "G#", "C"],
+    [1, 2, 4, 1, 2, 4, 5],
+    [5, 4, 2, 1, 4, 2, 1],
+    72
+  ),
+  pianoArpeggio(
+    "piano-gs-minor-arpeggio",
+    "G♯ Minor Arpeggio",
+    ["G#", "B", "D#"],
+    [2, 1, 2, 4, 1, 2, 4],
+    [2, 1, 4, 2, 1, 4, 2],
+    68
+  ),
+  pianoArpeggio(
+    "piano-bb-minor-arpeggio",
+    "B♭ Minor Arpeggio",
+    ["A#", "C#", "F"],
+    [2, 1, 2, 4, 1, 2, 4],
+    [2, 1, 4, 2, 1, 4, 2],
+    68
+  ),
+  pianoArpeggio(
+    "piano-eb-minor-arpeggio",
+    "D♯/E♭ Minor Arpeggio",
+    ["D#", "F#", "A#"],
+    [2, 4, 1, 2, 4, 1, 2],
+    [2, 1, 4, 2, 1, 4, 2],
+    68
+  ),
+
+  // === MAJOR TRIADS (circle of fifths) ===
+  pianoTriad("piano-c-major-triad", "C Major Triad", ["C", "E", "G"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-g-major-triad", "G Major Triad", ["G", "B", "D"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-f-major-triad", "F Major Triad", ["F", "A", "C"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-d-major-triad", "D Major Triad", ["D", "F#", "A"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-bb-major-triad", "B♭ Major Triad", ["A#", "D", "F"], [2, 4, 5], [5, 3, 1], 72),
+  pianoTriad("piano-a-major-triad", "A Major Triad", ["A", "C#", "E"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-eb-major-triad", "E♭ Major Triad", ["D#", "G", "A#"], [2, 4, 5], [5, 3, 1], 72),
+  pianoTriad("piano-e-major-triad", "E Major Triad", ["E", "G#", "B"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-ab-major-triad", "A♭ Major Triad", ["G#", "C", "D#"], [2, 4, 5], [5, 3, 1], 72),
+  pianoTriad("piano-b-major-triad", "B Major Triad", ["B", "D#", "F#"], [1, 3, 5], [5, 3, 1], 68),
+  pianoTriad("piano-db-major-triad", "D♭ Major Triad", ["C#", "F", "G#"], [2, 3, 5], [5, 3, 1], 68),
+  pianoTriad(
+    "piano-gb-major-triad",
+    "F♯/G♭ Major Triad",
+    ["F#", "A#", "C#"],
+    [2, 4, 5],
+    [5, 3, 1],
+    68
+  ),
+
+  // === MINOR TRIADS (circle of fifths) ===
+  pianoTriad("piano-a-minor-triad", "A Minor Triad", ["A", "C", "E"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-e-minor-triad", "E Minor Triad", ["E", "G", "B"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-d-minor-triad", "D Minor Triad", ["D", "F", "A"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-b-minor-triad", "B Minor Triad", ["B", "D", "F#"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-g-minor-triad", "G Minor Triad", ["G", "A#", "D"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-fs-minor-triad", "F♯ Minor Triad", ["F#", "A", "C#"], [2, 3, 5], [5, 3, 1], 68),
+  pianoTriad("piano-c-minor-triad", "C Minor Triad", ["C", "D#", "G"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-cs-minor-triad", "C♯ Minor Triad", ["C#", "E", "G#"], [2, 3, 5], [5, 3, 1], 68),
+  pianoTriad("piano-f-minor-triad", "F Minor Triad", ["F", "G#", "C"], [1, 3, 5], [5, 3, 1], 72),
+  pianoTriad("piano-gs-minor-triad", "G♯ Minor Triad", ["G#", "B", "D#"], [2, 4, 5], [5, 3, 1], 68),
+  pianoTriad("piano-bb-minor-triad", "B♭ Minor Triad", ["A#", "C#", "F"], [2, 4, 5], [5, 3, 1], 68),
+  pianoTriad(
+    "piano-eb-minor-triad",
+    "D♯/E♭ Minor Triad",
+    ["D#", "F#", "A#"],
+    [2, 4, 5],
+    [5, 3, 1],
+    68
+  ),
 
   // === NATURAL MINOR SCALES (circle of fifths, alternating) ===
   pianoScale("piano-a-natural-minor-scale", "A Natural Minor Scale", A_MIN, RH_Am, LH_Am, 84),

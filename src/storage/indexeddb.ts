@@ -91,6 +91,7 @@ export class IndexedDbStorageAdapter implements StorageAdapter {
     const variationStore = tx.objectStore(STORES.variations);
     const metaStore = tx.objectStore(STORES.meta);
 
+    exerciseStore.clear();
     for (const exercise of seed.exercises) {
       exerciseStore.put(exercise);
     }

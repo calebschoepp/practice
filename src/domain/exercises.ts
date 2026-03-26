@@ -26,7 +26,10 @@ function categoryOf(ex: Exercise): string {
   if (ex.id.includes("-natural-minor")) return "Natural Minor Scales";
   if (ex.id.includes("-harmonic-minor")) return "Harmonic Minor Scales";
   if (ex.id.includes("-melodic-minor")) return "Melodic Minor Scales";
-  if (ex.id.includes("-arpeggio")) return "Arpeggios";
+  if (ex.id.includes("-major-arpeggio")) return "Major Arpeggios";
+  if (ex.id.includes("-minor-arpeggio")) return "Minor Arpeggios";
+  if (ex.id.includes("-major-triad")) return "Major Triads";
+  if (ex.id.includes("-minor-triad")) return "Minor Triads";
   return "Other";
 }
 
@@ -47,7 +50,10 @@ export function groupExercises(exercises: Exercise[], instrument: Instrument): E
           "Natural Minor Scales",
           "Harmonic Minor Scales",
           "Melodic Minor Scales",
-          "Arpeggios",
+          "Major Arpeggios",
+          "Minor Arpeggios",
+          "Major Triads",
+          "Minor Triads",
           "Other",
         ]
       : ["Guitar Exercises", "Other"];
@@ -56,7 +62,7 @@ export function groupExercises(exercises: Exercise[], instrument: Instrument): E
   for (const label of groupOrder) {
     const exs = byCategory.get(label);
     if (exs && exs.length > 0) {
-      const cof = label === "Major Scales" ? MAJOR_COF : MINOR_COF;
+      const cof = label.startsWith("Major") ? MAJOR_COF : MINOR_COF;
       groups.push({ label, exercises: sortByCircleOfFifths(exs, cof) });
     }
   }

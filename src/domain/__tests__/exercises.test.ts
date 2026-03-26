@@ -1,5 +1,6 @@
 import { test, expect } from "bun:test";
 import { groupExercises } from "@/domain/exercises";
+import { EXERCISES } from "@/catalog/catalog";
 import type { Exercise } from "@/domain/types";
 
 function stubExercise(id: string, name: string): Exercise {
@@ -85,4 +86,70 @@ test("groupExercises sorts minor scales in circle of fifths order", () => {
     "B♭ Natural Minor Scale",
     "D♯/E♭ Natural Minor Scale",
   ]);
+});
+
+test("groupExercises categorizes major arpeggios separately from minor arpeggios", () => {
+  const exercises: Exercise[] = [
+    stubExercise("piano-c-major-arpeggio", "C Major Arpeggio"),
+    stubExercise("piano-c-minor-arpeggio", "C Minor Arpeggio"),
+    stubExercise("piano-g-major-arpeggio", "G Major Arpeggio"),
+  ];
+
+  const groups = groupExercises(exercises, "piano");
+  const majorArp = groups.find((g) => g.label === "Major Arpeggios");
+  const minorArp = groups.find((g) => g.label === "Minor Arpeggios");
+  expect(majorArp).toBeDefined();
+  expect(minorArp).toBeDefined();
+  expect(majorArp!.exercises).toHaveLength(2);
+  expect(minorArp!.exercises).toHaveLength(1);
+});
+
+test("groupExercises categorizes major triads separately from minor triads", () => {
+  const exercises: Exercise[] = [
+    stubExercise("piano-c-major-triad", "C Major Triad"),
+    stubExercise("piano-c-minor-triad", "C Minor Triad"),
+    stubExercise("piano-d-major-triad", "D Major Triad"),
+    stubExercise("piano-d-minor-triad", "D Minor Triad"),
+  ];
+
+  const groups = groupExercises(exercises, "piano");
+  const majorTriad = groups.find((g) => g.label === "Major Triads");
+  const minorTriad = groups.find((g) => g.label === "Minor Triads");
+  expect(majorTriad).toBeDefined();
+  expect(minorTriad).toBeDefined();
+  expect(majorTriad!.exercises).toHaveLength(2);
+  expect(minorTriad!.exercises).toHaveLength(2);
+});
+
+test("catalog has 12 major arpeggios, 12 minor arpeggios, 12 major triads, 12 minor triads", () => {
+  const groups = groupExercises(EXERCISES, "piano");
+  const majorArp = groups.find((g) => g.label === "Major Arpeggios");
+  const minorArp = groups.find((g) => g.label === "Minor Arpeggios");
+  const majorTriad = groups.find((g) => g.label === "Major Triads");
+  const minorTriad = groups.find((g) => g.label === "Minor Triads");
+
+  expect(majorArp!.exercises).toHaveLength(12);
+  expect(minorArp!.exercises).toHaveLength(12);
+  expect(majorTriad!.exercises).toHaveLength(12);
+  expect(minorTriad!.exercises).toHaveLength(12);
+});
+
+test("catalog arpeggios and triads are sorted in circle of fifths order", () => {
+  const groups = groupExercises(EXERCISES, "piano");
+  const majorArp = groups.find((g) => g.label === "Major Arpeggios")!;
+  const expectedMajorOrder = [
+    "C Major Arpeggio",
+    "G Major Arpeggio",
+    "F Major Arpeggio",
+    "D Major Arpeggio",
+    "B♭ Major Arpeggio",
+    "A Major Arpeggio",
+    "E♭ Major Arpeggio",
+    "E Major Arpeggio",
+    "A♭ Major Arpeggio",
+    "B Major Arpeggio",
+    "D♭ Major Arpeggio",
+    "F♯/G♭ Major Arpeggio",
+  ];
+  expect(majorArp.exercises.map((e) => e.name)).toEqual(expectedMajorOrder);
 });
