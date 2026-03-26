@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { groupExercises } from "@/domain/exercises";
+import { groupExercises, exerciseKeySlug, PIANO_KEYS, keyToggleStatus } from "@/domain/exercises";
 import { EXERCISES } from "@/catalog/catalog";
 import type { Exercise } from "@/domain/types";
 
@@ -152,4 +152,59 @@ test("catalog arpeggios and triads are sorted in circle of fifths order", () => 
     "F♯/G♭ Major Arpeggio",
   ];
   expect(majorArp.exercises.map((e) => e.name)).toEqual(expectedMajorOrder);
+});
+
+test("exerciseKeySlug extracts key from exercise IDs", () => {
+  expect(exerciseKeySlug("piano-c-major-scale")).toBe("c");
+  expect(exerciseKeySlug("piano-bb-major-scale")).toBe("bb");
+  expect(exerciseKeySlug("piano-gb-major-scale")).toBe("gb");
+  expect(exerciseKeySlug("piano-fs-natural-minor-scale")).toBe("gb"); // fs → gb (enharmonic)
+  expect(exerciseKeySlug("piano-cs-minor-arpeggio")).toBe("db"); // cs → db
+  expect(exerciseKeySlug("piano-ab-major-triad")).toBe("ab");
+  expect(exerciseKeySlug("guitar-e-minor-pentatonic")).toBeNull();
+});
+
+test("PIANO_KEYS contains all 12 keys in circle-of-fifths order with display labels", () => {
+  expect(PIANO_KEYS).toHaveLength(12);
+  expect(PIANO_KEYS[0]).toEqual({ slug: "c", label: "C" });
+  expect(PIANO_KEYS[1]).toEqual({ slug: "g", label: "G" });
+  expect(PIANO_KEYS[11]).toEqual({ slug: "gb", label: "F♯/G♭" });
+});
+
+test("every piano exercise in catalog has a recognized key slug", () => {
+  const pianoExercises = EXERCISES.filter((e) => e.instrument === "piano");
+  for (const ex of pianoExercises) {
+    const slug = exerciseKeySlug(ex.id);
+    expect(slug).not.toBeNull();
+    expect(PIANO_KEYS.some((k) => k.slug === slug)).toBe(true);
+  }
+});
+
+test("keyToggleStatus returns 'all' when no exercises are disabled", () => {
+  const exercises = [
+    stubExercise("piano-c-major-scale", "C Major Scale"),
+    stubExercise("piano-c-major-arpeggio", "C Major Arpeggio"),
+    stubExercise("piano-c-major-triad", "C Major Triad"),
+  ];
+  const disabledIds = new Set<string>();
+  expect(keyToggleStatus(exercises, "c", disabledIds)).toBe("all");
+});
+
+test("keyToggleStatus returns 'none' when all exercises are disabled", () => {
+  const exercises = [
+    stubExercise("piano-c-major-scale", "C Major Scale"),
+    stubExercise("piano-c-major-arpeggio", "C Major Arpeggio"),
+  ];
+  const disabledIds = new Set(["piano-c-major-scale", "piano-c-major-arpeggio"]);
+  expect(keyToggleStatus(exercises, "c", disabledIds)).toBe("none");
+});
+
+test("keyToggleStatus returns 'some' when only some exercises are disabled", () => {
+  const exercises = [
+    stubExercise("piano-c-major-scale", "C Major Scale"),
+    stubExercise("piano-c-major-arpeggio", "C Major Arpeggio"),
+    stubExercise("piano-c-major-triad", "C Major Triad"),
+  ];
+  const disabledIds = new Set(["piano-c-major-arpeggio"]);
+  expect(keyToggleStatus(exercises, "c", disabledIds)).toBe("some");
 });

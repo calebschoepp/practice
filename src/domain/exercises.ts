@@ -9,6 +9,65 @@ export interface ExerciseGroup {
 const MAJOR_COF = ["c", "g", "f", "d", "bb", "a", "eb", "e", "ab", "b", "db", "gb"];
 const MINOR_COF = ["a", "e", "d", "b", "g", "fs", "c", "cs", "f", "gs", "bb", "eb"];
 
+// All key slugs used in exercise IDs
+const ALL_KEY_SLUGS = new Set([...MAJOR_COF, ...MINOR_COF]);
+
+export interface PianoKey {
+  slug: string;
+  label: string;
+}
+
+export const PIANO_KEYS: PianoKey[] = [
+  { slug: "c", label: "C" },
+  { slug: "g", label: "G" },
+  { slug: "f", label: "F" },
+  { slug: "d", label: "D" },
+  { slug: "bb", label: "B♭" },
+  { slug: "a", label: "A" },
+  { slug: "eb", label: "E♭" },
+  { slug: "e", label: "E" },
+  { slug: "ab", label: "A♭" },
+  { slug: "b", label: "B" },
+  { slug: "db", label: "D♭" },
+  { slug: "gb", label: "F♯/G♭" },
+];
+
+// Map enharmonic minor slugs to their canonical major-side slug
+const ENHARMONIC_MAP: Record<string, string> = {
+  fs: "gb",
+  cs: "db",
+  gs: "ab",
+};
+
+/** Extract key slug from exercise ID, normalized to canonical PIANO_KEYS slug */
+export function exerciseKeySlug(id: string): string | null {
+  // IDs are like: piano-{key}-major-scale, piano-{key}-minor-arpeggio, etc.
+  const match = id.match(/^piano-([a-z]+)-/);
+  if (!match) return null;
+  const slug = match[1]!;
+  const canonical = ENHARMONIC_MAP[slug] ?? slug;
+  return ALL_KEY_SLUGS.has(slug) ? canonical : null;
+}
+
+/** Get all exercises for a given key slug */
+export function exercisesForKey(exercises: Exercise[], slug: string): Exercise[] {
+  return exercises.filter((e) => exerciseKeySlug(e.id) === slug);
+}
+
+/** Compute toggle status for a key: all enabled, some enabled, or none */
+export function keyToggleStatus(
+  exercises: Exercise[],
+  slug: string,
+  disabledIds: Set<string>
+): "all" | "some" | "none" {
+  const keyExs = exercisesForKey(exercises, slug);
+  if (keyExs.length === 0) return "none";
+  const enabledCount = keyExs.filter((e) => !disabledIds.has(e.id)).length;
+  if (enabledCount === keyExs.length) return "all";
+  if (enabledCount > 0) return "some";
+  return "none";
+}
+
 function cofIndex(id: string, cofOrder: string[]): number {
   for (let i = 0; i < cofOrder.length; i++) {
     if (id.includes(`-${cofOrder[i]}-`)) return i;

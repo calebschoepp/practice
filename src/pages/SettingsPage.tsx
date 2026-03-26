@@ -10,7 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FingeringDisplay } from "@/components/app/FingeringDisplay";
 import { ROUTES } from "@/domain/routes";
-import { groupExercises, type ExerciseGroup } from "@/domain/exercises";
+import {
+  groupExercises,
+  exercisesForKey,
+  keyToggleStatus,
+  PIANO_KEYS,
+  type ExerciseGroup,
+} from "@/domain/exercises";
 import type { Exercise, Instrument } from "@/domain/types";
 import { ensureStorageBootstrapped, storageAdapter } from "@/storage";
 
@@ -91,6 +97,40 @@ export function SettingsPage() {
       setDisabledIds((prev) => {
         const next = new Set(prev);
         for (const ex of group.exercises) {
+          if (enabled) {
+            next.delete(ex.id);
+          } else {
+            next.add(ex.id);
+          }
+        }
+        return next;
+      });
+    },
+    [exercises, disabledIds]
+  );
+
+  const toggleKey = useCallback(
+    async (slug: string, enabled: boolean) => {
+      const keyExercises = exercisesForKey(exercises, slug);
+      if (!enabled) {
+        if (
+          wouldLeaveEnabled(
+            exercises,
+            disabledIds,
+            "piano",
+            keyExercises.map((e) => e.id)
+          ) < 1
+        ) {
+          toast.error("At least one exercise must remain enabled");
+          return;
+        }
+      }
+      for (const ex of keyExercises) {
+        await storageAdapter.setExerciseEnabled(ex.id, enabled);
+      }
+      setDisabledIds((prev) => {
+        const next = new Set(prev);
+        for (const ex of keyExercises) {
           if (enabled) {
             next.delete(ex.id);
           } else {
@@ -191,7 +231,31 @@ export function SettingsPage() {
               Guitar
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="piano">{renderGroups(pianoGroups)}</TabsContent>
+          <TabsContent value="piano">
+            <div className="mb-4 grid grid-cols-12 gap-1">
+              {PIANO_KEYS.map((key) => {
+                const status = keyToggleStatus(exercises, key.slug, disabledIds);
+
+                return (
+                  <button
+                    key={key.slug}
+                    type="button"
+                    className={`rounded border py-1 text-center text-[10px] font-medium transition-colors ${
+                      status === "all"
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : status === "some"
+                          ? "border-primary/50 bg-primary/15 text-primary"
+                          : "border-border bg-background text-muted-foreground"
+                    }`}
+                    onClick={() => toggleKey(key.slug, status !== "all")}
+                  >
+                    {key.label}
+                  </button>
+                );
+              })}
+            </div>
+            {renderGroups(pianoGroups)}
+          </TabsContent>
           <TabsContent value="guitar">{renderGroups(guitarGroups)}</TabsContent>
         </Tabs>
       )}
