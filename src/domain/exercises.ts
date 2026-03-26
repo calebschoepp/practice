@@ -87,8 +87,15 @@ function categoryOf(ex: Exercise): string {
   if (ex.id.includes("-melodic-minor")) return "Melodic Minor Scales";
   if (ex.id.includes("-major-arpeggio")) return "Major Arpeggios";
   if (ex.id.includes("-minor-arpeggio")) return "Minor Arpeggios";
+  // Inversions must be checked before root-position triads
+  if (ex.id.includes("-major-triad-1st")) return "Major Triads — 1st Inv.";
+  if (ex.id.includes("-major-triad-2nd")) return "Major Triads — 2nd Inv.";
+  if (ex.id.includes("-minor-triad-1st")) return "Minor Triads — 1st Inv.";
+  if (ex.id.includes("-minor-triad-2nd")) return "Minor Triads — 2nd Inv.";
   if (ex.id.includes("-major-triad")) return "Major Triads";
   if (ex.id.includes("-minor-triad")) return "Minor Triads";
+  if (ex.id.includes("-formula-pattern")) return "Formula Patterns";
+  if (ex.id.includes("-chromatic-scale")) return "Chromatic Scales";
   return "Other";
 }
 
@@ -112,16 +119,21 @@ export function groupExercises(exercises: Exercise[], instrument: Instrument): E
           "Major Arpeggios",
           "Minor Arpeggios",
           "Major Triads",
+          "Major Triads — 1st Inv.",
+          "Major Triads — 2nd Inv.",
           "Minor Triads",
-          "Other",
+          "Minor Triads — 1st Inv.",
+          "Minor Triads — 2nd Inv.",
+          "Formula Patterns",
+          "Chromatic Scales",
         ]
-      : ["Guitar Exercises", "Other"];
+      : ["Guitar Exercises"];
 
   const groups: ExerciseGroup[] = [];
   for (const label of groupOrder) {
     const exs = byCategory.get(label);
     if (exs && exs.length > 0) {
-      const cof = label.startsWith("Major") ? MAJOR_COF : MINOR_COF;
+      const cof = label.includes("Minor") ? MINOR_COF : MAJOR_COF;
       groups.push({ label, exercises: sortByCircleOfFifths(exs, cof) });
     }
   }

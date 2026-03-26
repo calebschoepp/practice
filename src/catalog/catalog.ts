@@ -1,6 +1,6 @@
 import type { Exercise, NoteName, PianoKeyFingering, Variation } from "@/domain/types";
 
-export const CURRENT_SEED_VERSION = 9;
+export const CURRENT_SEED_VERSION = 10;
 
 const NOTE_ORDER: NoteName[] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
@@ -119,6 +119,105 @@ function pianoTriad(
       const chromaticIdx = NOTE_ORDER.indexOf(note);
       if (i > 0 && chromaticIdx <= prevChromaticIdx) currentOctave++;
       prevChromaticIdx = chromaticIdx;
+      keys.push({ note, octave: currentOctave, finger: fingers[i]! });
+    }
+    return keys;
+  }
+
+  return {
+    id,
+    instrument: "piano",
+    name,
+    defaultTempo: tempo,
+    fingering: {
+      type: "piano",
+      hands: [
+        { hand: "RH", keys: buildKeys(rhFingers) },
+        { hand: "LH", keys: buildKeys(lhFingers) },
+      ],
+    },
+  };
+}
+
+// Helper to build a 1-octave chromatic scale (13 notes)
+function pianoChromatic(id: string, name: string, startNote: NoteName, tempo = 72): Exercise {
+  const startIdx = NOTE_ORDER.indexOf(startNote);
+  const notes: NoteName[] = [];
+  for (let i = 0; i <= 12; i++) {
+    notes.push(NOTE_ORDER[(startIdx + i) % 12]!);
+  }
+
+  // Standard chromatic fingering: RH 1-3-1-3-1-1-3-1-3-1-3-1-3, LH 1-3-1-3-1-3-1-1-3-1-3-1-3
+  const rhFingers = [1, 3, 1, 3, 1, 1, 3, 1, 3, 1, 3, 1, 3];
+  const lhFingers = [1, 3, 1, 3, 1, 3, 1, 1, 3, 1, 3, 1, 3];
+
+  function buildKeys(fingers: number[]): PianoKeyFingering[] {
+    const keys: PianoKeyFingering[] = [];
+    let currentOctave = 1;
+    let prevIdx = startIdx;
+    for (let i = 0; i < fingers.length; i++) {
+      const noteIdx = (startIdx + i) % 12;
+      if (i > 0 && noteIdx <= prevIdx) currentOctave++;
+      prevIdx = noteIdx;
+      keys.push({ note: NOTE_ORDER[noteIdx]!, octave: currentOctave, finger: fingers[i]! });
+    }
+    return keys;
+  }
+
+  return {
+    id,
+    instrument: "piano",
+    name,
+    defaultTempo: tempo,
+    fingering: {
+      type: "piano",
+      hands: [
+        { hand: "RH", keys: buildKeys(rhFingers) },
+        { hand: "LH", keys: buildKeys(lhFingers) },
+      ],
+    },
+  };
+}
+
+// Helper to build a formula pattern exercise (1-2-3-1, 2-3-4-2, etc.)
+function pianoFormula(
+  id: string,
+  name: string,
+  scaleNotes: NoteName[],
+  rhFingers: number[],
+  lhFingers: number[],
+  tempo = 76
+): Exercise {
+  // Formula pattern: groups of 4 ascending from each scale degree
+  // e.g. in C major: C-D-E-C, D-E-F-D, E-F-G-E, F-G-A-F, G-A-B-G, A-B-C-A, B-C-D-B
+  const scaleLen = scaleNotes.length - 1; // 7 for major scale
+  const patternNotes: NoteName[] = [];
+  for (let start = 0; start < scaleLen; start++) {
+    patternNotes.push(scaleNotes[start]!);
+    patternNotes.push(scaleNotes[(start + 1) % scaleLen]!);
+    patternNotes.push(scaleNotes[(start + 2) % scaleLen]!);
+    patternNotes.push(scaleNotes[start]!);
+  }
+
+  function buildKeys(fingers: number[]): PianoKeyFingering[] {
+    const keys: PianoKeyFingering[] = [];
+    let currentOctave = 1;
+    const startChrIdx = NOTE_ORDER.indexOf(patternNotes[0]!);
+    let prevChrIdx = startChrIdx;
+    for (let i = 0; i < fingers.length; i++) {
+      const note = patternNotes[i]!;
+      const chrIdx = NOTE_ORDER.indexOf(note);
+      if (i > 0 && chrIdx <= prevChrIdx && !(chrIdx === prevChrIdx)) {
+        // Only bump octave going forward, not when returning to same note
+        currentOctave++;
+      }
+      // Handle the return note (4th of each group goes back down)
+      if (i > 0 && i % 4 === 3) {
+        // This is the return note — should be same octave as the group's first note
+        // Reset: don't bump
+      }
+      prevChrIdx = chrIdx;
+      const key = `${note}-${currentOctave}`;
       keys.push({ note, octave: currentOctave, finger: fingers[i]! });
     }
     return keys;
@@ -698,6 +797,511 @@ export const EXERCISES: Exercise[] = [
     LH_Ebm,
     68
   ),
+
+  // === MAJOR TRIADS — 1st Inversion (circle of fifths) ===
+  pianoTriad(
+    "piano-c-major-triad-1st",
+    "C Major Triad — 1st Inv.",
+    ["E", "G", "C"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-g-major-triad-1st",
+    "G Major Triad — 1st Inv.",
+    ["B", "D", "G"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-f-major-triad-1st",
+    "F Major Triad — 1st Inv.",
+    ["A", "C", "F"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-d-major-triad-1st",
+    "D Major Triad — 1st Inv.",
+    ["F#", "A", "D"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-bb-major-triad-1st",
+    "B♭ Major Triad — 1st Inv.",
+    ["D", "F", "A#"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-a-major-triad-1st",
+    "A Major Triad — 1st Inv.",
+    ["C#", "E", "A"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-eb-major-triad-1st",
+    "E♭ Major Triad — 1st Inv.",
+    ["G", "A#", "D#"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-e-major-triad-1st",
+    "E Major Triad — 1st Inv.",
+    ["G#", "B", "E"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-ab-major-triad-1st",
+    "A♭ Major Triad — 1st Inv.",
+    ["C", "D#", "G#"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-b-major-triad-1st",
+    "B Major Triad — 1st Inv.",
+    ["D#", "F#", "B"],
+    [1, 2, 5],
+    [5, 3, 1],
+    68
+  ),
+  pianoTriad(
+    "piano-db-major-triad-1st",
+    "D♭ Major Triad — 1st Inv.",
+    ["F", "G#", "C#"],
+    [1, 2, 5],
+    [5, 3, 1],
+    68
+  ),
+  pianoTriad(
+    "piano-gb-major-triad-1st",
+    "F♯/G♭ Major Triad — 1st Inv.",
+    ["A#", "C#", "F#"],
+    [1, 2, 5],
+    [5, 3, 1],
+    68
+  ),
+
+  // === MAJOR TRIADS — 2nd Inversion (circle of fifths) ===
+  pianoTriad(
+    "piano-c-major-triad-2nd",
+    "C Major Triad — 2nd Inv.",
+    ["G", "C", "E"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-g-major-triad-2nd",
+    "G Major Triad — 2nd Inv.",
+    ["D", "G", "B"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-f-major-triad-2nd",
+    "F Major Triad — 2nd Inv.",
+    ["C", "F", "A"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-d-major-triad-2nd",
+    "D Major Triad — 2nd Inv.",
+    ["A", "D", "F#"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-bb-major-triad-2nd",
+    "B♭ Major Triad — 2nd Inv.",
+    ["F", "A#", "D"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-a-major-triad-2nd",
+    "A Major Triad — 2nd Inv.",
+    ["E", "A", "C#"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-eb-major-triad-2nd",
+    "E♭ Major Triad — 2nd Inv.",
+    ["A#", "D#", "G"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-e-major-triad-2nd",
+    "E Major Triad — 2nd Inv.",
+    ["B", "E", "G#"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-ab-major-triad-2nd",
+    "A♭ Major Triad — 2nd Inv.",
+    ["D#", "G#", "C"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-b-major-triad-2nd",
+    "B Major Triad — 2nd Inv.",
+    ["F#", "B", "D#"],
+    [1, 3, 5],
+    [5, 2, 1],
+    68
+  ),
+  pianoTriad(
+    "piano-db-major-triad-2nd",
+    "D♭ Major Triad — 2nd Inv.",
+    ["G#", "C#", "F"],
+    [1, 3, 5],
+    [5, 2, 1],
+    68
+  ),
+  pianoTriad(
+    "piano-gb-major-triad-2nd",
+    "F♯/G♭ Major Triad — 2nd Inv.",
+    ["C#", "F#", "A#"],
+    [1, 3, 5],
+    [5, 2, 1],
+    68
+  ),
+
+  // === MINOR TRIADS — 1st Inversion (circle of fifths) ===
+  pianoTriad(
+    "piano-a-minor-triad-1st",
+    "A Minor Triad — 1st Inv.",
+    ["C", "E", "A"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-e-minor-triad-1st",
+    "E Minor Triad — 1st Inv.",
+    ["G", "B", "E"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-d-minor-triad-1st",
+    "D Minor Triad — 1st Inv.",
+    ["F", "A", "D"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-b-minor-triad-1st",
+    "B Minor Triad — 1st Inv.",
+    ["D", "F#", "B"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-g-minor-triad-1st",
+    "G Minor Triad — 1st Inv.",
+    ["A#", "D", "G"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-fs-minor-triad-1st",
+    "F♯ Minor Triad — 1st Inv.",
+    ["A", "C#", "F#"],
+    [1, 2, 5],
+    [5, 3, 1],
+    68
+  ),
+  pianoTriad(
+    "piano-c-minor-triad-1st",
+    "C Minor Triad — 1st Inv.",
+    ["D#", "G", "C"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-cs-minor-triad-1st",
+    "C♯ Minor Triad — 1st Inv.",
+    ["E", "G#", "C#"],
+    [1, 2, 5],
+    [5, 3, 1],
+    68
+  ),
+  pianoTriad(
+    "piano-f-minor-triad-1st",
+    "F Minor Triad — 1st Inv.",
+    ["G#", "C", "F"],
+    [1, 2, 5],
+    [5, 3, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-gs-minor-triad-1st",
+    "G♯ Minor Triad — 1st Inv.",
+    ["B", "D#", "G#"],
+    [1, 2, 5],
+    [5, 3, 1],
+    68
+  ),
+  pianoTriad(
+    "piano-bb-minor-triad-1st",
+    "B♭ Minor Triad — 1st Inv.",
+    ["C#", "F", "A#"],
+    [1, 2, 5],
+    [5, 3, 1],
+    68
+  ),
+  pianoTriad(
+    "piano-eb-minor-triad-1st",
+    "D♯/E♭ Minor Triad — 1st Inv.",
+    ["F#", "A#", "D#"],
+    [1, 2, 5],
+    [5, 3, 1],
+    68
+  ),
+
+  // === MINOR TRIADS — 2nd Inversion (circle of fifths) ===
+  pianoTriad(
+    "piano-a-minor-triad-2nd",
+    "A Minor Triad — 2nd Inv.",
+    ["E", "A", "C"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-e-minor-triad-2nd",
+    "E Minor Triad — 2nd Inv.",
+    ["B", "E", "G"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-d-minor-triad-2nd",
+    "D Minor Triad — 2nd Inv.",
+    ["A", "D", "F"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-b-minor-triad-2nd",
+    "B Minor Triad — 2nd Inv.",
+    ["F#", "B", "D"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-g-minor-triad-2nd",
+    "G Minor Triad — 2nd Inv.",
+    ["D", "G", "A#"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-fs-minor-triad-2nd",
+    "F♯ Minor Triad — 2nd Inv.",
+    ["C#", "F#", "A"],
+    [1, 3, 5],
+    [5, 2, 1],
+    68
+  ),
+  pianoTriad(
+    "piano-c-minor-triad-2nd",
+    "C Minor Triad — 2nd Inv.",
+    ["G", "C", "D#"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-cs-minor-triad-2nd",
+    "C♯ Minor Triad — 2nd Inv.",
+    ["G#", "C#", "E"],
+    [1, 3, 5],
+    [5, 2, 1],
+    68
+  ),
+  pianoTriad(
+    "piano-f-minor-triad-2nd",
+    "F Minor Triad — 2nd Inv.",
+    ["C", "F", "G#"],
+    [1, 3, 5],
+    [5, 2, 1],
+    72
+  ),
+  pianoTriad(
+    "piano-gs-minor-triad-2nd",
+    "G♯ Minor Triad — 2nd Inv.",
+    ["D#", "G#", "B"],
+    [1, 3, 5],
+    [5, 2, 1],
+    68
+  ),
+  pianoTriad(
+    "piano-bb-minor-triad-2nd",
+    "B♭ Minor Triad — 2nd Inv.",
+    ["F", "A#", "C#"],
+    [1, 3, 5],
+    [5, 2, 1],
+    68
+  ),
+  pianoTriad(
+    "piano-eb-minor-triad-2nd",
+    "D♯/E♭ Minor Triad — 2nd Inv.",
+    ["A#", "D#", "F#"],
+    [1, 3, 5],
+    [5, 2, 1],
+    68
+  ),
+
+  // === FORMULA PATTERNS (circle of fifths) ===
+  // 1-2-3-1, 2-3-4-2, ... pattern through the scale (1 octave, 28 notes)
+  pianoFormula(
+    "piano-c-formula-pattern",
+    "C Formula Pattern",
+    C_MAJ,
+    [1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 4, 5],
+    [5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 2, 1],
+    76
+  ),
+  pianoFormula(
+    "piano-g-formula-pattern",
+    "G Formula Pattern",
+    G_MAJ,
+    [1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 4, 5],
+    [5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 2, 1],
+    76
+  ),
+  pianoFormula(
+    "piano-f-formula-pattern",
+    "F Formula Pattern",
+    F_MAJ,
+    [1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 4, 5],
+    [5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 2, 1],
+    76
+  ),
+  pianoFormula(
+    "piano-d-formula-pattern",
+    "D Formula Pattern",
+    D_MAJ,
+    [1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 4, 5],
+    [5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 2, 1],
+    72
+  ),
+  pianoFormula(
+    "piano-bb-formula-pattern",
+    "B♭ Formula Pattern",
+    Bb_MAJ,
+    [2, 1, 2, 2, 1, 2, 3, 1, 2, 3, 4, 2, 1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 4, 5],
+    [3, 2, 1, 3, 2, 1, 4, 2, 1, 4, 3, 1, 3, 2, 1, 3, 2, 1, 4, 2, 1, 4, 3, 1, 4, 3, 4, 3],
+    72
+  ),
+  pianoFormula(
+    "piano-a-formula-pattern",
+    "A Formula Pattern",
+    A_MAJ,
+    [1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 4, 5],
+    [5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 2, 1],
+    72
+  ),
+  pianoFormula(
+    "piano-eb-formula-pattern",
+    "E♭ Formula Pattern",
+    Eb_MAJ,
+    [3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 4, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 3, 4],
+    [3, 2, 1, 3, 2, 1, 4, 2, 1, 4, 3, 1, 3, 2, 1, 3, 2, 1, 4, 2, 1, 4, 3, 1, 4, 3, 4, 3],
+    72
+  ),
+  pianoFormula(
+    "piano-e-formula-pattern",
+    "E Formula Pattern",
+    E_MAJ,
+    [1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 4, 5],
+    [5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 5, 4, 3, 5, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 2, 1],
+    72
+  ),
+  pianoFormula(
+    "piano-ab-formula-pattern",
+    "A♭ Formula Pattern",
+    Ab_MAJ,
+    [3, 4, 1, 3, 2, 3, 1, 2, 3, 1, 2, 3, 3, 4, 1, 3, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 1, 2],
+    [3, 2, 1, 3, 2, 1, 4, 2, 1, 4, 3, 1, 3, 2, 1, 3, 2, 1, 4, 2, 1, 4, 3, 1, 4, 3, 4, 3],
+    68
+  ),
+  pianoFormula(
+    "piano-b-formula-pattern",
+    "B Formula Pattern",
+    B_MAJ,
+    [1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 1, 2, 3, 1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 4, 5],
+    [4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 4, 2, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 4, 2, 1, 4, 1, 4],
+    68
+  ),
+  pianoFormula(
+    "piano-db-formula-pattern",
+    "D♭ Formula Pattern",
+    Db_MAJ,
+    [2, 3, 1, 2, 3, 4, 1, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 4, 1, 3, 1, 2, 3, 1, 2, 3, 2, 3],
+    [3, 2, 1, 3, 2, 1, 4, 2, 1, 4, 3, 1, 3, 2, 1, 3, 2, 1, 4, 2, 1, 4, 3, 1, 4, 3, 4, 3],
+    68
+  ),
+  pianoFormula(
+    "piano-gb-formula-pattern",
+    "F♯/G♭ Formula Pattern",
+    Gb_MAJ,
+    [2, 3, 4, 2, 1, 2, 3, 1, 2, 3, 1, 2, 2, 3, 4, 2, 1, 2, 3, 1, 2, 3, 1, 2, 3, 4, 3, 4],
+    [4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 4, 2, 4, 3, 2, 4, 3, 2, 1, 3, 2, 1, 4, 2, 1, 4, 1, 4],
+    68
+  ),
+
+  // === CHROMATIC SCALES (circle of fifths) ===
+  pianoChromatic("piano-c-chromatic-scale", "C Chromatic Scale", "C", 72),
+  pianoChromatic("piano-g-chromatic-scale", "G Chromatic Scale", "G", 72),
+  pianoChromatic("piano-f-chromatic-scale", "F Chromatic Scale", "F", 72),
+  pianoChromatic("piano-d-chromatic-scale", "D Chromatic Scale", "D", 72),
+  pianoChromatic("piano-bb-chromatic-scale", "B♭ Chromatic Scale", "A#", 72),
+  pianoChromatic("piano-a-chromatic-scale", "A Chromatic Scale", "A", 72),
+  pianoChromatic("piano-eb-chromatic-scale", "E♭ Chromatic Scale", "D#", 72),
+  pianoChromatic("piano-e-chromatic-scale", "E Chromatic Scale", "E", 72),
+  pianoChromatic("piano-ab-chromatic-scale", "A♭ Chromatic Scale", "G#", 72),
+  pianoChromatic("piano-b-chromatic-scale", "B Chromatic Scale", "B", 72),
+  pianoChromatic("piano-db-chromatic-scale", "D♭ Chromatic Scale", "C#", 72),
+  pianoChromatic("piano-gb-chromatic-scale", "F♯/G♭ Chromatic Scale", "F#", 72),
 
   // === GUITAR EXERCISES ===
   {

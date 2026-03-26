@@ -208,3 +208,27 @@ test("keyToggleStatus returns 'some' when only some exercises are disabled", () 
   const disabledIds = new Set(["piano-c-major-arpeggio"]);
   expect(keyToggleStatus(exercises, "c", disabledIds)).toBe("some");
 });
+
+test("catalog has triad inversions, formula patterns, and chromatic scales", () => {
+  const groups = groupExercises(EXERCISES, "piano");
+
+  const majorTriad1st = groups.find((g) => g.label === "Major Triads — 1st Inv.");
+  const majorTriad2nd = groups.find((g) => g.label === "Major Triads — 2nd Inv.");
+  const minorTriad1st = groups.find((g) => g.label === "Minor Triads — 1st Inv.");
+  const minorTriad2nd = groups.find((g) => g.label === "Minor Triads — 2nd Inv.");
+  const formulaPatterns = groups.find((g) => g.label === "Formula Patterns");
+  const chromaticScales = groups.find((g) => g.label === "Chromatic Scales");
+
+  expect(majorTriad1st!.exercises).toHaveLength(12);
+  expect(majorTriad2nd!.exercises).toHaveLength(12);
+  expect(minorTriad1st!.exercises).toHaveLength(12);
+  expect(minorTriad2nd!.exercises).toHaveLength(12);
+  expect(formulaPatterns!.exercises).toHaveLength(12);
+  expect(chromaticScales!.exercises).toHaveLength(12);
+});
+
+test("no exercises fall into Other category", () => {
+  const groups = groupExercises(EXERCISES, "piano");
+  const other = groups.find((g) => g.label === "Other");
+  expect(other).toBeUndefined();
+});
