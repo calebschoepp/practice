@@ -202,7 +202,7 @@ export function SettingsPage() {
           if (!open) setPreviewExercise(null);
         }}
       >
-        <DialogContent className="max-w-lg overflow-hidden">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{previewExercise?.name}</DialogTitle>
           </DialogHeader>

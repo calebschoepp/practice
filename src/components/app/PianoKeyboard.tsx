@@ -14,10 +14,20 @@ interface KeyDef {
   isBlack: boolean;
 }
 
-const WHITE_W = 22;
+export const WHITE_W = 22;
 const WHITE_H = 80;
 const BLACK_W = WHITE_W * 0.6;
 const BLACK_H = WHITE_H * 0.6;
+
+/** Count white keys in a chromatic range */
+export function countWhiteKeysInRange(range: { start: number; end: number }): number {
+  let count = 0;
+  for (let g = range.start; g <= range.end; g++) {
+    const note = NOTE_ORDER[g % 12]!;
+    if (!BLACK_NOTES.has(note)) count++;
+  }
+  return count;
+}
 
 /** Compute the key range needed across all hands: start at C of min octave, end at B of max octave */
 export function computePianoKeyRange(hands: PianoHand[]): { start: number; end: number } {
@@ -79,13 +89,13 @@ export function PianoKeyboard({ hand, range }: PianoKeyboardProps) {
 
   return (
     <div>
-      <p className="sticky left-0 w-fit mb-1 text-xs font-medium text-muted-foreground">
+      <p className="mb-1 text-xs font-medium text-muted-foreground">
         {hand.hand === "RH" ? "Right Hand" : "Left Hand"}
       </p>
       <svg
         viewBox={`0 0 ${SVG_W} ${totalH}`}
-        width={SVG_W}
-        height={totalH}
+        className="w-full"
+        style={{ maxWidth: SVG_W }}
         role="img"
         aria-label={`${hand.hand === "RH" ? "Right" : "Left"} hand fingering`}
       >
