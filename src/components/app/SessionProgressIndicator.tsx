@@ -8,7 +8,7 @@ export function SessionProgressIndicator({
   targetCount,
 }: SessionProgressIndicatorProps) {
   const display =
-    targetCount === null ? `${completedCount + 1}/?` : `${completedCount + 1}/${targetCount}`;
+    targetCount === null ? `${completedCount + 1}/∞` : `${completedCount + 1}/${targetCount}`;
 
   return (
     <p
