@@ -43,3 +43,89 @@ test("stats update after a completion", async ({ page }) => {
   await expect(page.getByTestId("stats-summary-card")).toContainText("1");
   await expect(page.getByTestId("exercise-chart-card")).toBeVisible();
 });
+
+test("metronome pauses while rating overlay is open", async ({ page }) => {
+  await page.addInitScript(() => {
+    let tickCount = 0;
+    const win = window as unknown as Window & {
+      __metronomeTickCount: number;
+      AudioContext: unknown;
+      webkitAudioContext?: unknown;
+    };
+
+    class FakeAudioContext {
+      currentTime = 0;
+      destination = {};
+
+      resume() {
+        return Promise.resolve();
+      }
+
+      close() {
+        return Promise.resolve();
+      }
+
+      createOscillator() {
+        return {
+          type: "square",
+          frequency: { value: 0 },
+          connect() {
+            return undefined;
+          },
+          start() {
+            tickCount += 1;
+            win.__metronomeTickCount = tickCount;
+          },
+          stop() {
+            return undefined;
+          },
+        };
+      }
+
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime() {
+              return undefined;
+            },
+            exponentialRampToValueAtTime() {
+              return undefined;
+            },
+          },
+          connect() {
+            return undefined;
+          },
+        };
+      }
+    }
+
+    win.__metronomeTickCount = tickCount;
+    win.AudioContext = FakeAudioContext;
+    win.webkitAudioContext = FakeAudioContext;
+  });
+
+  await page.goto("/#/");
+  await page.getByTestId("start-session").click();
+
+  await page.waitForTimeout(900);
+  const ticksBeforeOverlay = await page.evaluate(
+    () => (window as unknown as { __metronomeTickCount: number }).__metronomeTickCount
+  );
+  expect(ticksBeforeOverlay).toBeGreaterThan(1);
+
+  await page.getByTestId("done-button").click();
+
+  await page.waitForTimeout(900);
+  const ticksDuringOverlay = await page.evaluate(
+    () => (window as unknown as { __metronomeTickCount: number }).__metronomeTickCount
+  );
+  expect(ticksDuringOverlay - ticksBeforeOverlay).toBeLessThanOrEqual(1);
+
+  await page.getByTestId("difficulty-3").click();
+
+  await page.waitForTimeout(900);
+  const ticksAfterOverlay = await page.evaluate(
+    () => (window as unknown as { __metronomeTickCount: number }).__metronomeTickCount
+  );
+  expect(ticksAfterOverlay).toBeGreaterThan(ticksDuringOverlay);
+});

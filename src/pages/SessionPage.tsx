@@ -40,7 +40,7 @@ export function SessionPage() {
       }
     };
 
-    if (muted || !current) {
+    if (muted || !current || showDifficulty) {
       clearTimer();
       return;
     }
@@ -81,7 +81,7 @@ export function SessionPage() {
     return () => {
       clearTimer();
     };
-  }, [tempo, muted, current]);
+  }, [tempo, muted, current, showDifficulty]);
 
   useEffect(() => {
     return () => {
