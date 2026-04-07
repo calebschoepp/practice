@@ -5,7 +5,18 @@
     font-family: "Avenir Next", "Nunito", "Segoe UI", sans-serif;
   }
 
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+
+  html.scroll-locked,
+  body.scroll-locked {
+    @apply overflow-hidden overscroll-none;
+  }
+
   body {
-    @apply min-w-[320px] min-h-screen m-0 bg-background text-foreground;
+    @apply min-w-[320px] m-0 bg-background text-foreground;
   }
 }

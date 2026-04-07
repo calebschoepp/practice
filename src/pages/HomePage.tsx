@@ -21,7 +21,7 @@ export function HomePage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-4 py-6">
+    <main className="mx-auto flex h-dvh w-full max-w-xl flex-col overflow-hidden px-4 py-6">
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-semibold tracking-tight">Practice Tracker</h1>
         <div className="flex gap-2">
