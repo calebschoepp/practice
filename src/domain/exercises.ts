@@ -39,19 +39,50 @@ const ENHARMONIC_MAP: Record<string, string> = {
   gs: "ab",
 };
 
-/** Extract key slug from exercise ID, normalized to canonical PIANO_KEYS slug */
-export function exerciseKeySlug(id: string): string | null {
-  // IDs are like: piano-{key}-major-scale, piano-{key}-minor-arpeggio, etc.
+const RELATIVE_MINOR_BY_MAJOR = MAJOR_COF.reduce<Record<string, string>>((acc, major, index) => {
+  const minor = MINOR_COF[index]!;
+  acc[major] = ENHARMONIC_MAP[minor] ?? minor;
+  return acc;
+}, {});
+
+type ExerciseMode = "major" | "minor" | "neutral";
+
+function parseExerciseId(id: string): { canonicalSlug: string; mode: ExerciseMode } | null {
   const match = id.match(/^piano-([a-z]+)-/);
   if (!match) return null;
+
   const slug = match[1]!;
-  const canonical = ENHARMONIC_MAP[slug] ?? slug;
-  return ALL_KEY_SLUGS.has(slug) ? canonical : null;
+  if (!ALL_KEY_SLUGS.has(slug)) return null;
+
+  const canonicalSlug = ENHARMONIC_MAP[slug] ?? slug;
+  const mode = id.includes("-major-") ? "major" : id.includes("-minor-") ? "minor" : "neutral";
+  return { canonicalSlug, mode };
 }
 
-/** Get all exercises for a given key slug */
+/** Extract key slug from exercise ID, normalized to canonical PIANO_KEYS slug */
+export function exerciseKeySlug(id: string): string | null {
+  return parseExerciseId(id)?.canonicalSlug ?? null;
+}
+
+/** Get all exercises for a major key button, including its relative minor */
 export function exercisesForKey(exercises: Exercise[], slug: string): Exercise[] {
-  return exercises.filter((e) => exerciseKeySlug(e.id) === slug);
+  const canonicalMajor = ENHARMONIC_MAP[slug] ?? slug;
+  const relativeMinor = RELATIVE_MINOR_BY_MAJOR[canonicalMajor];
+
+  return exercises.filter((e) => {
+    const parsed = parseExerciseId(e.id);
+    if (!parsed) return false;
+
+    if (parsed.canonicalSlug === canonicalMajor) {
+      return relativeMinor ? parsed.mode !== "minor" : true;
+    }
+
+    if (relativeMinor && parsed.canonicalSlug === relativeMinor) {
+      return parsed.mode === "minor";
+    }
+
+    return false;
+  });
 }
 
 /** Compute toggle status for a key: all enabled, some enabled, or none */

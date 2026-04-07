@@ -1,5 +1,11 @@
 import { test, expect } from "bun:test";
-import { groupExercises, exerciseKeySlug, PIANO_KEYS, keyToggleStatus } from "@/domain/exercises";
+import {
+  groupExercises,
+  exerciseKeySlug,
+  exercisesForKey,
+  PIANO_KEYS,
+  keyToggleStatus,
+} from "@/domain/exercises";
 import { EXERCISES } from "@/catalog/catalog";
 import type { Exercise } from "@/domain/types";
 
@@ -207,6 +213,34 @@ test("keyToggleStatus returns 'some' when only some exercises are disabled", () 
   ];
   const disabledIds = new Set(["piano-c-major-arpeggio"]);
   expect(keyToggleStatus(exercises, "c", disabledIds)).toBe("some");
+});
+
+test("exercisesForKey includes major key plus relative minor exercises", () => {
+  const exercises = [
+    stubExercise("piano-c-major-scale", "C Major Scale"),
+    stubExercise("piano-a-natural-minor-scale", "A Natural Minor Scale"),
+    stubExercise("piano-a-minor-arpeggio", "A Minor Arpeggio"),
+    stubExercise("piano-c-minor-triad", "C Minor Triad"),
+  ];
+
+  expect(exercisesForKey(exercises, "c").map((exercise) => exercise.id)).toEqual([
+    "piano-c-major-scale",
+    "piano-a-natural-minor-scale",
+    "piano-a-minor-arpeggio",
+  ]);
+});
+
+test("exercisesForKey matches enharmonic relative minors", () => {
+  const exercises = [
+    stubExercise("piano-e-major-scale", "E Major Scale"),
+    stubExercise("piano-cs-natural-minor-scale", "C# Natural Minor Scale"),
+    stubExercise("piano-db-major-triad", "D♭ Major Triad"),
+  ];
+
+  expect(exercisesForKey(exercises, "e").map((exercise) => exercise.id)).toEqual([
+    "piano-e-major-scale",
+    "piano-cs-natural-minor-scale",
+  ]);
 });
 
 test("catalog has triad inversions, formula patterns, and chromatic scales", () => {
