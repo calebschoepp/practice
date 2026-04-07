@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 
 interface DifficultyOverlayProps {
   open: boolean;
+  selectedDifficulty: 0 | 1 | 2 | 3 | 4;
   onSelect: (difficulty: 0 | 1 | 2 | 3 | 4) => void;
 }
 
@@ -13,7 +14,7 @@ const LABELS: Array<{ value: 0 | 1 | 2 | 3 | 4; text: string }> = [
   { value: 4, text: "Perfect" },
 ];
 
-export function DifficultyOverlay({ open, onSelect }: DifficultyOverlayProps) {
+export function DifficultyOverlay({ open, selectedDifficulty, onSelect }: DifficultyOverlayProps) {
   if (!open) return null;
 
   return (
@@ -27,9 +28,12 @@ export function DifficultyOverlay({ open, onSelect }: DifficultyOverlayProps) {
           <Button
             key={item.value}
             variant="outline"
-            className="h-12"
+            className={`h-12 ${
+              selectedDifficulty === item.value ? "border-primary/40 bg-primary/10" : ""
+            }`}
             onClick={() => onSelect(item.value)}
             data-testid={`difficulty-${item.value}`}
+            aria-pressed={selectedDifficulty === item.value}
           >
             {item.text}
           </Button>

@@ -44,6 +44,56 @@ test("stats update after a completion", async ({ page }) => {
   await expect(page.getByTestId("exercise-chart-card")).toBeVisible();
 });
 
+test("enter marks current exercise done with default okay selection", async ({ page }) => {
+  await page.getByTestId("start-session").click();
+
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("How did that go?")).toBeVisible();
+  await expect(page.getByTestId("difficulty-2")).toHaveClass(/bg-primary\/10/);
+
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("session-progress")).toContainText("2/3");
+});
+
+test("up and down arrows adjust rating selection", async ({ page }) => {
+  await page.getByTestId("start-session").click();
+
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("difficulty-2")).toHaveClass(/bg-primary\/10/);
+
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByTestId("difficulty-3")).toHaveClass(/bg-primary\/10/);
+
+  await page.keyboard.press("ArrowUp");
+  await expect(page.getByTestId("difficulty-2")).toHaveClass(/bg-primary\/10/);
+
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("session-progress")).toContainText("2/3");
+});
+
+test("escape exits session and leaves settings/stats pages", async ({ page }) => {
+  await page.getByTestId("start-session").click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByText("Choose your session")).toBeVisible();
+
+  await page.getByLabel("Settings").click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByText("Choose your session")).toBeVisible();
+
+  await page.getByLabel("Stats").click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByText("Choose your session")).toBeVisible();
+});
+
+test("escape closes session from rating overlay", async ({ page }) => {
+  await page.getByTestId("start-session").click();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("How did that go?")).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(page.getByText("Choose your session")).toBeVisible();
+});
+
 test("metronome pauses while rating overlay is open", async ({ page }) => {
   await page.addInitScript(() => {
     let tickCount = 0;

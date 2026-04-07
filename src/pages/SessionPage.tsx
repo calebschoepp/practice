@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Volume2, VolumeX, X } from "lucide-react";
 import { DifficultyOverlay } from "@/components/app/DifficultyOverlay";
@@ -8,12 +8,17 @@ import { SessionProgressIndicator } from "@/components/app/SessionProgressIndica
 import { TempoControl } from "@/components/app/TempoControl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { stepDifficulty, type Difficulty } from "@/domain/difficulty";
 import { ROUTES } from "@/domain/routes";
 import { useSessionStore } from "@/store/sessionStore";
+
+const DEFAULT_DIFFICULTY: Difficulty = 2;
 
 export function SessionPage() {
   const navigate = useNavigate();
   const [showDifficulty, setShowDifficulty] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(DEFAULT_DIFFICULTY);
+  const [isSubmittingDifficulty, setIsSubmittingDifficulty] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const timerRef = useRef<number | null>(null);
 
@@ -95,15 +100,81 @@ export function SessionPage() {
     };
   }, []);
 
+  const openDifficultyOverlay = useCallback(() => {
+    setSelectedDifficulty(DEFAULT_DIFFICULTY);
+    setShowDifficulty(true);
+  }, []);
+
+  const onDifficultySelected = useCallback(
+    async (difficulty: Difficulty) => {
+      if (isSubmittingDifficulty) return;
+      setIsSubmittingDifficulty(true);
+      const result = await submitDifficulty(difficulty);
+      setShowDifficulty(false);
+      setSelectedDifficulty(DEFAULT_DIFFICULTY);
+      setIsSubmittingDifficulty(false);
+      if (result.ended) {
+        navigate(ROUTES.home);
+      }
+    },
+    [isSubmittingDifficulty, navigate, submitDifficulty]
+  );
+
+  const onCloseEarly = useCallback(async () => {
+    await endSessionEarly();
+    navigate(ROUTES.home);
+  }, [endSessionEarly, navigate]);
+
   useEffect(() => {
+    const isTypingTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
+    };
+
     const handleKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return;
+
       if (e.key === "m" || e.key === "M") {
         toggleMuted();
+        return;
+      }
+
+      if (showDifficulty && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+        e.preventDefault();
+        const arrowKey = e.key as "ArrowUp" | "ArrowDown";
+        setSelectedDifficulty((previous) => stepDifficulty(previous, arrowKey));
+        return;
+      }
+
+      if (e.repeat) return;
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (showDifficulty) {
+          void onDifficultySelected(selectedDifficulty);
+        } else {
+          openDifficultyOverlay();
+        }
+        return;
+      }
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        void onCloseEarly();
       }
     };
+
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [toggleMuted]);
+  }, [
+    onCloseEarly,
+    onDifficultySelected,
+    openDifficultyOverlay,
+    selectedDifficulty,
+    showDifficulty,
+    toggleMuted,
+  ]);
 
   if (!current) {
     return (
@@ -113,19 +184,6 @@ export function SessionPage() {
       </main>
     );
   }
-
-  const onDifficultySelected = async (difficulty: 0 | 1 | 2 | 3 | 4) => {
-    const result = await submitDifficulty(difficulty);
-    setShowDifficulty(false);
-    if (result.ended) {
-      navigate(ROUTES.home);
-    }
-  };
-
-  const onCloseEarly = async () => {
-    await endSessionEarly();
-    navigate(ROUTES.home);
-  };
 
   return (
     <main className="mx-auto flex h-dvh w-full max-w-xl flex-col px-4 py-4 overflow-hidden">
@@ -165,17 +223,17 @@ export function SessionPage() {
             onDecrease={() => adjustTempo(-2)}
             onIncrease={() => adjustTempo(2)}
           />
-          <Button
-            className="h-12 w-full"
-            onClick={() => setShowDifficulty(true)}
-            data-testid="done-button"
-          >
+          <Button className="h-12 w-full" onClick={openDifficultyOverlay} data-testid="done-button">
             Done
           </Button>
         </CardContent>
       </Card>
 
-      <DifficultyOverlay open={showDifficulty} onSelect={onDifficultySelected} />
+      <DifficultyOverlay
+        open={showDifficulty}
+        selectedDifficulty={selectedDifficulty}
+        onSelect={onDifficultySelected}
+      />
     </main>
   );
 }

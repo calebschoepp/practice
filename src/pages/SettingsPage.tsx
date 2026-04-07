@@ -51,6 +51,17 @@ export function SettingsPage() {
     })();
   }, []);
 
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      navigate(ROUTES.home);
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [navigate]);
+
   const toggle = useCallback(
     async (exerciseId: string, enabled: boolean) => {
       if (!enabled) {
